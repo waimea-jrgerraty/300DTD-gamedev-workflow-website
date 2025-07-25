@@ -14,7 +14,7 @@ Develop a prototype that simulates the key functionality of the system, then tes
 
 Replace this text with notes regarding the DB design.
 
-![SCREENSHOT OF DB DESIGN](screenshots/example.png)
+![SCREENSHOT OF DB DESIGN](screenshots/DrawSQL.png)
 
 
 ### Required Data Input
@@ -38,7 +38,7 @@ The first stage of prototyping was to explore how the UI might 'flow' between st
 
 This Figma demo shows the initial design for the UI 'flow':
 
-**FIGMA FLOW - PLACE THE FIGMA EMBED CODE HERE - MAKE SURE IT IS SET SO THAT EVERYONE CAN ACCESS IT**
+<iframe style="border: 1px solid rgba(0, 0, 0, 0.1);" width="800" height="450" src="https://embed.figma.com/proto/ohwO0llpl7a2nQXxnQp42v/TaskForge-UX-MVP?node-id=2-10&p=f&scaling=scale-down&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=2%3A6&embed-host=share" allowfullscreen></iframe>
 
 ### Testing
 
