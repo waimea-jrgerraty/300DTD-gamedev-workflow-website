@@ -1,12 +1,7 @@
 {#=====================================================
   Base template
-  - Used as the basis of all regular pages
-  - Provides a main heading and navigation menu
-  - Has blocks for the page title and main content
-  - Loads PicoCSS and Pico Colours
-  - Loads a user stylesheet
-  - Loads JS utility functions
-  - Includes block for flash messages
+  - Used as the basis of the main interface
+  - Differs to base.jinja in that it loads a fluid viewport version of PicoCSS
 =====================================================#}
 <!DOCTYPE html>
 <html lang="en">
@@ -20,7 +15,7 @@
         </title>
         <script src="/static/js/utils.js"></script>
         <link rel="stylesheet"
-              href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.sand.min.css">
+              href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.fluid.classless.sand.min.css">
         <link rel="stylesheet"
               href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css">
         <link rel="stylesheet" href="/static/css/styles.css">

@@ -1,9 +1,9 @@
-#===========================================================
+# ===========================================================
 # YOUR PROJECT TITLE HERE
 # YOUR NAME HERE
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # BRIEF DESCRIPTION OF YOUR PROJECT HERE
-#===========================================================
+# ===========================================================
 
 
 from flask import Flask, render_template, request, flash, redirect, session
@@ -11,42 +11,42 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import html
 
 from app.helpers.session import init_session
-from app.helpers.db      import connect_db
-from app.helpers.errors  import init_error, not_found_error
+from app.helpers.db import connect_db
+from app.helpers.errors import init_error, not_found_error
 from app.helpers.logging import init_logging
-from app.helpers.auth    import login_required
-from app.helpers.time    import init_datetime, utc_timestamp, utc_timestamp_now
+from app.helpers.auth import login_required
+from app.helpers.time import init_datetime, utc_timestamp, utc_timestamp_now
 
 
 # Create the app
 app = Flask(__name__)
 
 # Configure app
-init_session(app)   # Setup a session for messages, etc.
-init_logging(app)   # Log requests
-init_error(app)     # Handle errors and exceptions
+init_session(app)  # Setup a session for messages, etc.
+init_logging(app)  # Log requests
+init_error(app)  # Handle errors and exceptions
 init_datetime(app)  # Handle UTC dates in timestamps
 
 
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # Home page route
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 @app.get("/")
 def index():
     return render_template("pages/home.jinja")
 
 
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # About page route
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 @app.get("/about/")
 def about():
     return render_template("pages/about.jinja")
 
 
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # Things page route - Show all the things, and new thing form
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 @app.get("/things/")
 def show_all_things():
     with connect_db() as client:
@@ -61,7 +61,7 @@ def show_all_things():
 
             ORDER BY things.name ASC
         """
-        params=[]
+        params = []
         result = client.execute(sql, params)
         things = result.rows
 
@@ -69,9 +69,9 @@ def show_all_things():
         return render_template("pages/things.jinja", things=things)
 
 
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # Thing page route - Show details of a single thing
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 @app.get("/thing/<int:id>")
 def show_one_thing(id):
     with connect_db() as client:
@@ -102,15 +102,15 @@ def show_one_thing(id):
             return not_found_error()
 
 
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # Route for adding a thing, using data posted from a form
 # - Restricted to logged in users
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 @app.post("/add")
 @login_required
 def add_a_thing():
     # Get the data from the form
-    name  = request.form.get("name")
+    name = request.form.get("name")
     price = request.form.get("price")
 
     # Sanitise the text inputs
@@ -130,10 +130,10 @@ def add_a_thing():
         return redirect("/things")
 
 
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # Route for deleting a thing, Id given in the route
 # - Restricted to logged in users
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 @app.get("/delete/<int:id>")
 @login_required
 def delete_a_thing(id):
@@ -151,34 +151,28 @@ def delete_a_thing(id):
         return redirect("/things")
 
 
-
-
-
-
-
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # User registration form route
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 @app.get("/register")
 def register_form():
     return render_template("pages/register.jinja")
 
 
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # User login form route
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 @app.get("/login")
 def login_form():
     return render_template("pages/login.jinja")
 
 
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # Route for adding a user when registration form submitted
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 @app.post("/add-user")
 def add_user():
     # Get the data from the form
-    name = request.form.get("name")
     username = request.form.get("username")
     password = request.form.get("password")
 
@@ -190,15 +184,12 @@ def add_user():
 
         # No existing record found, so safe to add the user
         if not result.rows:
-            # Sanitise the name
-            name = html.escape(name)
-
             # Salt and hash the password
             hash = generate_password_hash(password)
 
             # Add the user to the users table
-            sql = "INSERT INTO users (name, username, password_hash) VALUES (?, ?, ?)"
-            params = [name, username, hash]
+            sql = "INSERT INTO users (username, password_hash) VALUES (?, ?)"
+            params = [username, hash]
             client.execute(sql, params)
 
             # And let them know it was successful and they can login
@@ -210,9 +201,9 @@ def add_user():
         return redirect("/register")
 
 
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # Route for processing a user login
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 @app.post("/login-user")
 def login_user():
     # Get the login form data
@@ -234,8 +225,8 @@ def login_user():
             # Hash matches?
             if check_password_hash(hash, password):
                 # Yes, so save info in the session
-                session["user_id"]   = user["id"]
-                session["user_name"] = user["name"]
+                session["user_id"] = user["id"]
+                session["user_name"] = "REMOVE THIS"
                 session["logged_in"] = True
 
                 # And head back to the home page
@@ -247,9 +238,9 @@ def login_user():
         return redirect("/login")
 
 
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # Route for processing a user logout
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 @app.get("/logout")
 def logout():
     # Clear the details from the session
@@ -260,4 +251,3 @@ def logout():
     # And head back to the home page
     flash("Logged out successfully", "success")
     return redirect("/")
-
