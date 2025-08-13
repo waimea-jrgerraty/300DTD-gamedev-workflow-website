@@ -2,57 +2,28 @@
   User Registration page
   - Form for adding a new user
 =====================================================#}
-
-{% extends 'pages/base.jinja' %}
-
-
+{% extends "pages/base.jinja" %}
 {% block title %}
-
-    Flask Demo - New User
-
-{% endblock %}
-
-
+    TaskForge - Register
+{% endblock title %}
 {% block content %}
-
-    <article>
-
-        <header>
-            <h2>New User Registration</h2>
-        </header>
-
-        <form action="/add-user" method="POST">
-
-            <input
-                type="text"
-                name="name"
-                placeholder="Your name"
-                required
-            >
-
-            <input
-                type="text"
-                name="username"
-                placeholder="Username"
-                required
-            >
-
-            <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                required
-            >
-
-            <button>Register</button>
-
-        </form>
-
-        <footer>
-            Or, if you already have an account, <a href="/login">login</a>
-        </footer>
-
-    </article>
-
-{% endblock %}
-
+    <div id="fluid">
+        <article>
+            <header>
+                <h2>Sign Up</h2>
+            </header>
+            <form action="/add-user" method="post">
+                <input type="text" name="username" placeholder="Username" required>
+                <input type="password"
+                       name="password"
+                       placeholder="Password"
+                       required
+                       minlength="8">
+                <button>Sign Up</button>
+            </form>
+            <footer>
+                Or, if you already have an account, <a href="/login">sign in</a>
+            </footer>
+        </article>
+    </div>
+{% endblock content %}
