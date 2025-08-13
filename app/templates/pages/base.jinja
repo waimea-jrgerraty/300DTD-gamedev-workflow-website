@@ -11,6 +11,8 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
+        <meta name="description">
+        <meta name="keywords">
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="icon" href="/static/images/icon.svg">
@@ -20,7 +22,7 @@
         </title>
         <script src="/static/js/utils.js"></script>
         <link rel="stylesheet"
-              href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.sand.min.css">
+              href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.fluid.classless.red.min.css">
         <link rel="stylesheet"
               href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css">
         <link rel="stylesheet" href="/static/css/styles.css">
@@ -29,30 +31,38 @@
         <header>
             <nav>
                 <ul>
-                    <li>
-                        <strong><a href="/">TaskForge</a></strong>
-                    </li>
+                    {% if session.logged_in %}
+                        <li>
+                            <a href="/projects">Projects</a>
+                        </li>
+                    {% endif %}
+                    {% block nav_left %}
+                    {% endblock nav_left %}
                 </ul>
                 <ul>
                     <li>
-                        <a href="/">Home</a>
+                        <h3>
+                            <strong><a href="/">TaskForge</a></strong>
+                        </h3>
                     </li>
-                    <li>
-                        <a href="/things">Things</a>
-                    </li>
-                    <li>
-                        <a href="/about">About</a>
-                    </li>
-                    {% if session.user_id %}
+                    {% block nav_centre %}
+                    {% endblock nav_centre %}
+                </ul>
+                <ul>
+                    {% if session.logged_in %}
+                        {#
+                            Eventually we want to display the users icon, and clicking that will
+                            open a dropdown menu with the button to sign out.
+                         #}
                         <li>
-                            <a href="/logout">Logout</a>
+                            <a href="/logout">Sign Out</a>
                         </li>
                     {% else %}
                         <li>
-                            <a href="/login">Login</a>
+                            <a href="/login">Sign In</a>
                         </li>
                         <li>
-                            <a href="/register">Register</a>
+                            <a href="/register">Sign Up</a>
                         </li>
                     {% endif %}
                 </ul>

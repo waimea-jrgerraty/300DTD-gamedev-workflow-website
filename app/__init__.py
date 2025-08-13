@@ -176,29 +176,27 @@ def add_user():
     username = request.form.get("username")
     password = request.form.get("password")
 
+    # Salt and hash the password
+    hash = generate_password_hash(password)
+
     with connect_db() as client:
-        # Attempt to find an existing record for that user
-        sql = "SELECT * FROM users WHERE username = ?"
-        params = [username]
-        result = client.execute(sql, params)
+        # Attempt to add this user to the database
+        sql = "INSERT OR IGNORE INTO users (username, password_hash) VALUES (?, ?)"
+        values = [username, hash]
+        result = client.execute(sql, values)
 
-        # No existing record found, so safe to add the user
-        if not result.rows:
-            # Salt and hash the password
-            hash = generate_password_hash(password)
+        if result.rows_affected == 0:
+            # Handle if a username is already taken
+            flash("Username already taken.", "error")
+            return redirect("/register")
+        else:
+            # Sign the user in immediately
+            session["userid"] = result.last_insert_rowid
+            session["username"] = username
+            session["logged_in"] = True
 
-            # Add the user to the users table
-            sql = "INSERT INTO users (username, password_hash) VALUES (?, ?)"
-            params = [username, hash]
-            client.execute(sql, params)
-
-            # And let them know it was successful and they can login
-            flash("Registration successful", "success")
-            return redirect("/login")
-
-        # Found an existing record, so prompt to try again
-        flash("Username already exists. Try again...", "error")
-        return redirect("/register")
+            flash(f"User {username} registered successfully", "success")
+            return redirect("/")
 
 
 # -----------------------------------------------------------
@@ -225,8 +223,8 @@ def login_user():
             # Hash matches?
             if check_password_hash(hash, password):
                 # Yes, so save info in the session
-                session["user_id"] = user["id"]
-                session["user_name"] = "REMOVE THIS"
+                session["userid"] = user["id"]
+                session["username"] = user["username"]
                 session["logged_in"] = True
 
                 # And head back to the home page

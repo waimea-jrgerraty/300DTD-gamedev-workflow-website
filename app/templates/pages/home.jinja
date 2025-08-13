@@ -4,8 +4,10 @@
   - List of things passed in as 'things' array
   - Form for adding a new thing
 =====================================================#}
-{% extends 'pages/base.jinja' %}
-{% block title %}Flask Demo{% endblock %}
+{% extends "pages/base.jinja" %}
+{% block title %}
+    TaskForge
+{% endblock title %}
 {% block content %}
     <h1>Flask Demo App with Turso DB and User Accounts</h1>
     <p>
@@ -24,4 +26,4 @@
         <li>Flash messages for information</li>
     </ul>
     <a href="/things" role="button">Go to the Things...</a>
-{% endblock %}
+{% endblock content %}
