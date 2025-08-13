@@ -242,8 +242,8 @@ def login_user():
 @app.get("/logout")
 def logout():
     # Clear the details from the session
-    session.pop("user_id", None)
-    session.pop("user_name", None)
+    session.pop("userid", None)
+    session.pop("username", None)
     session.pop("logged_in", None)
 
     # And head back to the home page
