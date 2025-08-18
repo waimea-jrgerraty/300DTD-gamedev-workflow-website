@@ -25,6 +25,8 @@
               href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.fluid.classless.red.min.css">
         <link rel="stylesheet"
               href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css">
+        <link rel="stylesheet"
+              href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=star" />
         <link rel="stylesheet" href="/static/css/styles.css">
     </head>
     <body>
@@ -33,7 +35,7 @@
                 <ul>
                     {% if session.logged_in %}
                         <li>
-                            <a href="/projects">Projects</a>
+                            <a href="/">Projects</a>
                         </li>
                     {% endif %}
                     {% block nav_left %}

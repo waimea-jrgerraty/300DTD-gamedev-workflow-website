@@ -1,0 +1,104 @@
+{#=====================================================
+  Home page
+  - Hero style greeting banner
+  - List of things passed in as 'things' array
+  - Form for adding a new thing
+=====================================================#}
+{% extends "pages/base.jinja" %}
+{% block title %}
+    TaskForge
+{% endblock title %}
+{% block content %}
+    <div id="fluid">
+        <h1>Projects</h1>
+        {# TODO:
+            Turn the icon thing into a macro
+            Turn the invitation thing into a macro
+         #}
+        {# Active invitations #}
+        {% set inactive_projects = projects | selectattr("active", "equalto", none) | list %}
+        {% set hidden_inactive_projects = projects | selectattr("active", "equalto", false) | list %}
+        {% if inactive_projects or hidden_inactive_projects %}
+            <h2>Invitations</h2>
+            <article>
+                <ul class="invitations">
+                    {% for project in inactive_projects %}
+                        <li class="project">
+                            {% if project.icon_data and project.icon_mime %}
+                                <img src="data:{{ project.icon_mime }};base64,{{ project.icon_data }}"
+                                     alt="{{ project.name }} icon"
+                                     height="128"
+                                     width="128"
+                                     class="icon">
+                            {% else %}
+                                <img src="../../static/images/placeholder.svg"
+                                     alt="No project icon"
+                                     height="128"
+                                     width="128"
+                                     class="icon">
+                            {% endif %}
+                            <span class="name">{{ project.name }}</span>
+                            {# Need a form to accept or decline #}
+                        </li>
+                    {% endfor %}
+                    {% for project in hidden_inactive_projects %}
+                        <li class="project hidden_inactive">
+                            {% if project.icon_data and project.icon_mime %}
+                                <img src="data:{{ project.icon_mime }};base64,{{ project.icon_data }}"
+                                     alt="{{ project.name }} icon"
+                                     height="128"
+                                     width="128"
+                                     class="icon">
+                            {% else %}
+                                <img src="../../static/images/placeholder.svg"
+                                     alt="No project icon"
+                                     height="128"
+                                     width="128"
+                                     class="icon">
+                            {% endif %}
+                            <span class="name">{{ project.name }}</span>
+                            {# Need a form to accept or decline #}
+                        </li>
+                    {% endfor %}
+                </ul>
+                <footer>
+                    <label>
+                        <input type="checkbox" id="toggle-inactive">
+                        Show rejected invitations
+                    </label>
+                </footer>
+            </article>
+        {% endif %}
+        {# Projects you are a member of #}
+        {% set active_projects = projects | selectattr("active") | list %}
+        <article>
+            <ul class="active">
+                {% if active_projects %}
+                    {% for project in active_projects %}
+                        <li class="project">
+                            {% if project.icon_data and project.icon_mime %}
+                                <img src="data:{{ project.icon_mime }};base64,{{ project.icon_data }}"
+                                     alt="{{ project.name }} icon"
+                                     height="128"
+                                     width="128"
+                                     class="icon">
+                            {% else %}
+                                <img src="../../static/images/placeholder.svg"
+                                     alt="No project icon"
+                                     height="128"
+                                     width="128"
+                                     class="icon">
+                            {% endif %}
+                            <span class="name">{{ project.name }}</span>
+                            {% if project.owner == session.userid %}
+                                <span class="owner-icon material-icons" title="You own this project">star</span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                {% else %}
+                    <li class="no-projects">You do not have any projects yet — use the + button to create a new project!</li>
+                {% endif %}
+            </ul>
+        </article>
+    </div>
+{% endblock content %}
