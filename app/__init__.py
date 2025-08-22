@@ -9,6 +9,7 @@
 from flask import Flask, render_template, request, flash, redirect, session
 from werkzeug.security import generate_password_hash, check_password_hash
 import html
+import base64
 
 from app.helpers.session import init_session
 from app.helpers.db import connect_db
@@ -16,6 +17,8 @@ from app.helpers.errors import init_error, not_found_error
 from app.helpers.logging import init_logging
 from app.helpers.auth import login_required
 from app.helpers.time import init_datetime, utc_timestamp, utc_timestamp_now
+from io import BytesIO
+from PIL import Image
 
 
 # Create the app
@@ -33,7 +36,7 @@ init_datetime(app)  # Handle UTC dates in timestamps
 # -----------------------------------------------------------
 @app.get("/")
 def index():
-    if session["logged_in"]:
+    if "logged_in" in session:
         with connect_db() as client:
             # Select all entries where the user is either assigned to the project or the owner of the project
             sql = """
@@ -51,7 +54,31 @@ def index():
             params = [session["userid"], session["userid"], session["userid"]]
             result = client.execute(sql, params)
 
-            return render_template("pages/projects.jinja", projects=result.rows)
+            # Encode image data to base64 for each project
+            projects = []
+            for row in result.rows:
+                # Access fields explicitly
+                icon_data = row["icon_data"]
+                icon_mime = row["icon_mime"]
+
+                if icon_data:
+                    icon_b64 = base64.b64encode(icon_data).decode("utf-8")
+                else:
+                    icon_b64 = None
+
+                projects.append(
+                    {
+                        "id": row["id"],
+                        "name": row["name"],
+                        "owner": row["owner"],
+                        "active": row["active"],
+                        "invited": row["invited"],
+                        "icon_data": icon_b64,
+                        "icon_mime": icon_mime,
+                    }
+                )
+
+            return render_template("pages/projects.jinja", projects=projects)
     else:
         return render_template("pages/home.jinja")
 
@@ -122,32 +149,71 @@ def about():
 #             return not_found_error()
 
 
+# Crop the image to 1:1 from the center
+def crop_center(img: Image.Image) -> Image.Image:
+    width, height = img.size
+    if width == height:
+        return img
+    new_side = min(width, height)
+    left = (width - new_side) // 2
+    top = (height - new_side) // 2
+    right = left + new_side
+    bottom = top + new_side
+    return img.crop((left, top, right, bottom))
+
+
 # -----------------------------------------------------------
 # Route for adding a thing, using data posted from a form
 # - Restricted to logged in users
 # -----------------------------------------------------------
-# @app.post("/add")
-# @login_required
-# def add_a_thing():
-#     # Get the data from the form
-#     name = request.form.get("name")
-#     price = request.form.get("price")
+@app.post(rule="/create-project")
+@login_required
+def create_project():
+    # Get the data from the form
+    name = request.form.get("name")
+    image_file = request.files.get("image")
 
-#     # Sanitise the text inputs
-#     name = html.escape(name)
+    # Sanitise the text inputs
+    name = html.escape(name)
 
-#     # Get the user id from the session
-#     user_id = session["user_id"]
+    # Extract the image data if possible
+    image_data = None
+    image_mime = None
 
-#     with connect_db() as client:
-#         # Add the thing to the DB
-#         sql = "INSERT INTO things (name, price, user_id) VALUES (?, ?, ?)"
-#         params = [name, price, user_id]
-#         client.execute(sql, params)
+    if image_file and image_file.filename != "":
+        try:
+            # Resize to 256x256 using Pillow
+            img = (
+                crop_center(Image.open(image_file))
+                .convert("RGBA")
+                .resize((256, 256), Image.Resampling.LANCZOS)
+            )
 
-#         # Go back to the home page
-#         flash(f"Thing '{name}' added", "success")
-#         return redirect("/things")
+            # Save as a PNG
+            buffer = BytesIO()
+            img.save(buffer, format="PNG")
+            buffer.seek(0)
+
+            image_data = buffer.read()
+            image_mime = "image/png"
+
+            # image_data = image_file.read()  # store raw binary
+            # image_mime = image_file.mimetype  # e.g. "image/png"
+        except:
+            flash("Invalid image upload", "error")
+
+    # Get the user id from the session
+    userid = session["userid"]
+
+    with connect_db() as client:
+        # Add the thing to the DB
+        sql = "INSERT INTO projects (name, owner, icon_data, icon_mime) VALUES (?, ?, ?, ?)"
+        params = [name, userid, image_data, image_mime]
+        client.execute(sql, params)
+
+        # Go back to the home page
+        flash(f"Project '{name}' created", "success")
+        return redirect("/")
 
 
 # -----------------------------------------------------------

@@ -16,3 +16,6 @@ colorama
 
 # Timezones
 tzdata
+
+# Python Imaging Library
+Pillow

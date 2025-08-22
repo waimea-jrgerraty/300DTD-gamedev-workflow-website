@@ -15,8 +15,28 @@
             Turn the icon thing into a macro
             Turn the invitation thing into a macro
          #}
+        {# New project form #}
+        <button id="openModalBtn" class="floating-button">
+            <span class="material-symbols-outlined">add_2</span>
+        </button>
+        <div id="projectModal" class="modal glass">
+            <div class="modal-content">
+                <span id="closeModalBtn" class="close-button">×</span>
+                <h2>Create New Project</h2>
+                <form action="/create-project" method="post" enctype="multipart/form-data">
+                    <label for="projectName">
+                        Project Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="projectName" name="name" autocomplete="off" required>
+                    <label for="projectImage">Project Icon</label>
+                    <input type="file" id="projectImage" name="image" accept="image/*">
+                    <button type="submit" class="submit-btn">Create</button>
+                </form>
+            </div>
+        </div>
+        <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
         {# Active invitations #}
-        {% set inactive_projects = projects | selectattr("active", "equalto", none) | list %}
+        {% set inactive_projects = projects | selectattr("active", "equalto", none) | rejectattr("owner", "equalto", session.userid) | list %}
         {% set hidden_inactive_projects = projects | selectattr("active", "equalto", false) | list %}
         {% if inactive_projects or hidden_inactive_projects %}
             <h2>Invitations</h2>
@@ -71,6 +91,8 @@
         {% endif %}
         {# Projects you are a member of #}
         {% set active_projects = projects | selectattr("active") | list %}
+        {% set owned_projects = projects | selectattr("owner", "equalto", session.userid) | list %}
+        {% set active_projects = (active_projects + owned_projects) | unique(attribute="id") %}
         <article>
             <ul class="active">
                 {% if active_projects %}
@@ -91,7 +113,8 @@
                             {% endif %}
                             <span class="name">{{ project.name }}</span>
                             {% if project.owner == session.userid %}
-                                <span class="owner-icon material-icons" title="You own this project">star</span>
+                                <span class="owner-icon material-symbols-outlined"
+                                      title="You own this project">star</span>
                             {% endif %}
                         </li>
                     {% endfor %}
