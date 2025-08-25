@@ -112,6 +112,7 @@ def project(id):
         params = [id]
         project = client.execute(sql, params)
         # Will need to redo the joins and such when implementing categories and groups
+        # Will probably move this to a separate root for categories
         sql = """
             SELECT 
                 t.id                AS task_id,
@@ -127,10 +128,13 @@ def project(id):
                 ON a.task = t.id
             LEFT JOIN users u
                 ON u.id = a.user
-            WHERE t."group" = ?;
+            WHERE t."group" = ?
+            GROUP BY 
+                t.id, t.name, t.priority, t.description, 
+                t.created_timestamp, t.completed_timestamp, t.deadline_timestamp;
         """
         params = [id]
-        result = client.execute(sql, params)
+        tasks = client.execute(sql, params)
 
         # Did we get a result?
         if result.rows:
