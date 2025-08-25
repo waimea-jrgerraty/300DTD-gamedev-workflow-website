@@ -57,15 +57,15 @@
                             open a dropdown menu with the button to sign out.
                          #}
                         <li>
-                            <a href="/logout">Sign Out</a>
+                            <a href="/user/logout">Sign Out</a>
                         </li>
                         <li>{{ session.username }}</li>
                     {% else %}
                         <li>
-                            <a href="/login">Sign In</a>
+                            <a href="/user/login">Sign In</a>
                         </li>
                         <li>
-                            <a href="/register">Sign Up</a>
+                            <a href="/user/register">Sign Up</a>
                         </li>
                     {% endif %}
                 </ul>

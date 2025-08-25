@@ -36,6 +36,8 @@ init_datetime(app)  # Handle UTC dates in timestamps
 # -----------------------------------------------------------
 @app.get("/")
 def index():
+    # When logged in show the projects list
+    # Otherwise show the generic home page for onboarding
     if "logged_in" in session:
         with connect_db() as client:
             # Select all entries where the user is either assigned to the project or the owner of the project
@@ -78,75 +80,66 @@ def index():
                     }
                 )
 
-            return render_template("pages/projects.jinja", projects=projects)
+            return render_template("pages/home-projects.jinja", projects=projects)
     else:
         return render_template("pages/home.jinja")
 
 
 # -----------------------------------------------------------
-# About page route
-# -----------------------------------------------------------
-@app.get("/about/")
-def about():
-    return render_template("pages/about.jinja")
-
-
-# -----------------------------------------------------------
-# Things page route - Show all the things, and new thing form
-# -----------------------------------------------------------
-# @app.get("/things/")
-# def show_all_things():
-#     with connect_db() as client:
-#         # Get all the things from the DB
-#         sql = """
-#             SELECT things.id,
-#                    things.name,
-#                    users.name AS owner
-
-#             FROM things
-#             JOIN users ON things.user_id = users.id
-
-#             ORDER BY things.name ASC
-#         """
-#         params = []
-#         result = client.execute(sql, params)
-#         things = result.rows
-
-#         # And show them on the page
-#         return render_template("pages/things.jinja", things=things)
-
-
-# -----------------------------------------------------------
 # Thing page route - Show details of a single thing
 # -----------------------------------------------------------
-# @app.get("/thing/<int:id>")
-# def show_one_thing(id):
-#     with connect_db() as client:
-#         # Get the thing details from the DB, including the owner info
-#         sql = """
-#             SELECT things.id,
-#                    things.name,
-#                    things.price,
-#                    things.user_id,
-#                    users.name AS owner
+@app.get("/project/<int:id>")
+@login_required
+def project(id):
+    with connect_db() as client:
+        # Check if the user is a member of the project or the owner
+        sql = """
+            SELECT 1
+            FROM projects p
+            LEFT JOIN member_of m ON p.id = m.project AND m.user = ?
+            WHERE p.id = ? 
+                AND (p.owner = ? OR m.user IS NOT NULL)
+            LIMIT 1;
+        """
+        params = [session["userid"], id, session["userid"]]
+        result = client.execute(sql, params)
+        if not result.rows:
+            flash("You do not have access to that project", "error")
+            return redirect("/")
 
-#             FROM things
-#             JOIN users ON things.user_id = users.id
+        # Get all information about the project
+        sql = """SELECT * FROM projects WHERE id = ?"""
+        params = [id]
+        project = client.execute(sql, params)
+        # Will need to redo the joins and such when implementing categories and groups
+        sql = """
+            SELECT 
+                t.id                AS task_id,
+                t.name              AS task_name,
+                t.priority          AS task_priority,
+                t.description       AS task_description,
+                t.created_timestamp AS task_created_timestamp,
+                t.completed_timestamp AS task_completed_timestamp,
+                t.deadline_timestamp  AS task_deadline_timestamp,
+                GROUP_CONCAT(u.id) AS assigned_users
+            FROM tasks t
+            LEFT JOIN assigned_to a
+                ON a.task = t.id
+            LEFT JOIN users u
+                ON u.id = a.user
+            WHERE t."group" = ?;
+        """
+        params = [id]
+        result = client.execute(sql, params)
 
-#             WHERE things.id=?
-#         """
-#         params = [id]
-#         result = client.execute(sql, params)
+        # Did we get a result?
+        if result.rows:
+            # yes, so show it on the page
+            return render_template("pages/project.jinja", project=result.rows[0])
 
-#         # Did we get a result?
-#         if result.rows:
-#             # yes, so show it on the page
-#             thing = result.rows[0]
-#             return render_template("pages/thing.jinja", thing=thing)
-
-#         else:
-#             # No, so show error
-#             return not_found_error()
+        else:
+            # No, so show error
+            return not_found_error()
 
 
 # Crop the image to 1:1 from the center
@@ -166,7 +159,7 @@ def crop_center(img: Image.Image) -> Image.Image:
 # Route for adding a thing, using data posted from a form
 # - Restricted to logged in users
 # -----------------------------------------------------------
-@app.post(rule="/create-project")
+@app.post("/project")
 @login_required
 def create_project():
     # Get the data from the form
@@ -240,23 +233,23 @@ def create_project():
 # -----------------------------------------------------------
 # User registration form route
 # -----------------------------------------------------------
-@app.get("/register")
+@app.get("/user/register")
 def register_form():
-    return render_template("pages/register.jinja")
+    return render_template("pages/user-register.jinja")
 
 
 # -----------------------------------------------------------
 # User login form route
 # -----------------------------------------------------------
-@app.get("/login")
+@app.get("/user/login")
 def login_form():
-    return render_template("pages/login.jinja")
+    return render_template("pages/user-login.jinja")
 
 
 # -----------------------------------------------------------
 # Route for adding a user when registration form submitted
 # -----------------------------------------------------------
-@app.post("/add-user")
+@app.post("/user/new")
 def add_user():
     # Get the data from the form
     username = request.form.get("username")
@@ -288,7 +281,7 @@ def add_user():
 # -----------------------------------------------------------
 # Route for processing a user login
 # -----------------------------------------------------------
-@app.post("/login-user")
+@app.post("/user/login")
 def login_user():
     # Get the login form data
     username = request.form.get("username")
@@ -325,7 +318,7 @@ def login_user():
 # -----------------------------------------------------------
 # Route for processing a user logout
 # -----------------------------------------------------------
-@app.get("/logout")
+@app.get("/user/logout")
 def logout():
     # Clear the details from the session
     session.pop("userid", None)

@@ -1,18 +1,18 @@
 {#=====================================================
-  User Registration page
-  - Form for adding a new user
+  User Login page
+  - Form for logging in
 =====================================================#}
 {% extends "pages/base.jinja" %}
 {% block title %}
-    TaskForge - Register
+    TaskForge - Login
 {% endblock title %}
 {% block content %}
     <div id="fluid">
         <article>
             <header>
-                <h2>Sign Up</h2>
+                <h2>Sign In</h2>
             </header>
-            <form action="/add-user" method="post">
+            <form action="/user/login" method="post">
                 <input type="text"
                        name="username"
                        placeholder="Username"
@@ -21,13 +21,12 @@
                 <input type="password"
                        name="password"
                        placeholder="Password"
-                       autocomplete="new-password"
-                       minlength="8"
+                       autocomplete="current-password"
                        required>
-                <button>Sign Up</button>
+                <button>Sign In</button>
             </form>
             <footer>
-                Or, if you already have an account, <a href="/login">sign in</a>
+                Or, if you don't have an account, <a href="/register">sign up</a>
             </footer>
         </article>
     </div>

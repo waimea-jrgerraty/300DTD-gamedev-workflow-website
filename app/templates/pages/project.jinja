@@ -1,0 +1,32 @@
+{#=====================================================
+  Home page
+  - Hero style greeting banner
+  - List of things passed in as 'things' array
+  - Form for adding a new thing
+=====================================================#}
+{% extends "pages/base.jinja" %}
+{% block title %}
+    TaskForge - {{ project.project_name }}
+{% endblock title %}
+{% block content %}
+    {# New task form #}
+    <button id="openModalBtn" class="floating-button">
+        <span class="material-symbols-outlined">add_2</span>
+    </button>
+    <div id="projectModal" class="modal glass">
+        <div class="modal-content">
+            <span id="closeModalBtn" class="close-button">×</span>
+            {# <h2>Create New Project</h2>
+                <form action="/create-project" method="post" enctype="multipart/form-data">
+                    <label for="projectName">
+                        Project Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="projectName" name="name" autocomplete="off" required>
+                    <label for="projectImage">Project Icon</label>
+                    <input type="file" id="projectImage" name="image" accept="image/*">
+                    <button type="submit" class="submit-btn">Create</button>
+                </form> #}
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
+{% endblock content %}
