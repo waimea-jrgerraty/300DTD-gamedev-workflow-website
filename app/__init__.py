@@ -277,6 +277,7 @@ def add_user():
             session["userid"] = result.last_insert_rowid
             session["username"] = username
             session["logged_in"] = True
+            session.permanent = True
 
             flash(f"User {username} registered successfully", "success")
             return redirect("/")
@@ -290,6 +291,7 @@ def login_user():
     # Get the login form data
     username = request.form.get("username")
     password = request.form.get("password")
+    remember = request.form.get("remember")
 
     with connect_db() as client:
         # Attempt to find a record for that user
@@ -309,6 +311,11 @@ def login_user():
                 session["userid"] = user["id"]
                 session["username"] = user["username"]
                 session["logged_in"] = True
+
+                if remember:
+                    session.permanent = True
+                else:
+                    session.permanent = False
 
                 # And head back to the home page
                 flash("Login successful", "success")
