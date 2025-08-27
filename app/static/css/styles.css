@@ -55,7 +55,7 @@
 /* Modal box */
 .modal-content {
     padding: 20px;
-    width: 400px;
+    width: 30%;
     border-radius: 12px;
     position: relative;
     background-color: var(--pico-background-color);

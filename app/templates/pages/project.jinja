@@ -6,8 +6,13 @@
 =====================================================#}
 {% extends "pages/base.jinja" %}
 {% block title %}
-    TaskForge - {{ project.project_name }}
+    TaskForge - {{ project.name }}
 {% endblock title %}
+{% block nav_centre %}
+    <h3>
+        <span class="weak">/ {{ project.name }}</span>
+    </h3>
+{% endblock nav_centre %}
 {% block content %}
     {# New task form #}
     <button id="openModalBtn" class="floating-button">
@@ -16,16 +21,30 @@
     <div id="projectModal" class="modal glass">
         <div class="modal-content">
             <span id="closeModalBtn" class="close-button">×</span>
-            {# <h2>Create New Project</h2>
-                <form action="/create-project" method="post" enctype="multipart/form-data">
-                    <label for="projectName">
-                        Project Name <span class="required">*</span>
-                    </label>
-                    <input type="text" id="projectName" name="name" autocomplete="off" required>
-                    <label for="projectImage">Project Icon</label>
-                    <input type="file" id="projectImage" name="image" accept="image/*">
-                    <button type="submit" class="submit-btn">Create</button>
-                </form> #}
+            <h2>Create New Task</h2>
+            <form action="/task" method="post">
+                <input type="hidden" name="project" value="{{ project.id }}">
+                <input type="hidden" name="category" value="{{ category.id }}">
+                <label for="taskName">
+                    Task Name <span class="required">*</span>
+                </label>
+                <input type="text" id="taskName" name="name" autocomplete="off" required>
+                <label for="description">Description</label>
+                <textarea id="description" name="description" rows="4" placeholder="..."></textarea>
+                <label for="priority">
+                    Priority <span class="required">*</span>
+                </label>
+                <select name="priority" id="priority" aria-label="Priority">
+                    <option selected value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+                <label for="dueDate">Due Date</label>
+                <input type="date" id="dueDate" name="deadline">
+                <button type="submit" class="submit-btn">Create</button>
+            </form>
         </div>
     </div>
     <script src="{{ url_for('static', filename='js/modal.js') }}"></script>

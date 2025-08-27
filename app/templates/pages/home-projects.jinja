@@ -97,7 +97,7 @@
             <ul class="active">
                 {% if active_projects %}
                     {% for project in active_projects %}
-                        <a href="/projects/{{ project.id }}">
+                        <a href="/project/{{ project.id }}">
                             <li class="project">
                                 {% if project.icon_data and project.icon_mime %}
                                     <img src="data:{{ project.icon_mime }};base64,{{ project.icon_data }}"

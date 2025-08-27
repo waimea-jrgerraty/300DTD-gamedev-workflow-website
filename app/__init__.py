@@ -6,7 +6,7 @@
 # ===========================================================
 
 
-from flask import Flask, render_template, request, flash, redirect, session
+from flask import Flask, render_template, flash, redirect, jsonify, request, session
 from werkzeug.security import generate_password_hash, check_password_hash
 import html
 import base64
@@ -86,12 +86,45 @@ def index():
 
 
 # -----------------------------------------------------------
-# Thing page route - Show details of a single thing
+# Project root route, redirect to first valid category
 # -----------------------------------------------------------
-@app.get("/project/<int:id>")
+@app.get("/project/<int:project_id>/")
 @login_required
-def project(id):
+def project_root(project_id: int):
+    # Skip for MVP
+    return redirect(f"/project/{project_id}/category/1")
+
     with connect_db() as client:
+        # Authentication is done on the category route
+        sql = """
+            SELECT id FROM categories
+            WHERE project = ?
+            ORDER BY id LIMIT 1
+        """
+        params = [project_id]
+        result = client.execute(sql, params)
+
+        if result.rows:
+            category_id = result.rows[0]["id"]
+            return redirect(f"/project/{project_id}/category/{category_id}")
+        else:
+            flash(
+                f"Unexpected error: No categories found for project {project_id}",
+                "error",
+            )
+            return redirect("/")
+
+
+# -----------------------------------------------------------
+# Project root route, redirect to first valid category
+# -----------------------------------------------------------
+@app.get("/project/<int:project_id>/category/<int:category_id>")
+@login_required
+def category_root(project_id: int, category_id: int):
+    with connect_db() as client:
+        # FOR FINAL RELEASE:
+        # Implement categories and groups
+
         # Check if the user is a member of the project or the owner
         sql = """
             SELECT 1
@@ -101,7 +134,7 @@ def project(id):
                 AND (p.owner = ? OR m.user IS NOT NULL)
             LIMIT 1;
         """
-        params = [session["userid"], id, session["userid"]]
+        params = [session["userid"], project_id, session["userid"]]
         result = client.execute(sql, params)
         if not result.rows:
             flash("You do not have access to that project", "error")
@@ -109,10 +142,10 @@ def project(id):
 
         # Get all information about the project
         sql = """SELECT * FROM projects WHERE id = ?"""
-        params = [id]
+        params = [project_id]
         project = client.execute(sql, params)
         # Will need to redo the joins and such when implementing categories and groups
-        # Will probably move this to a separate root for categories
+        # Will probably move this to a separate root for categories /project<int:project>/category<int:category>
         sql = """
             SELECT 
                 t.id                AS task_id,
@@ -133,13 +166,18 @@ def project(id):
                 t.id, t.name, t.priority, t.description, 
                 t.created_timestamp, t.completed_timestamp, t.deadline_timestamp;
         """
-        params = [id]
+        params = [project_id]
         tasks = client.execute(sql, params)
 
         # Did we get a result?
-        if result.rows:
+        if project.rows:
             # yes, so show it on the page
-            return render_template("pages/project.jinja", project=result.rows[0])
+            return render_template(
+                "pages/project.jinja",
+                project=project.rows[0],
+                tasks=tasks.rows,
+                category={"id": 1},  # testing
+            )
 
         else:
             # No, so show error
@@ -211,6 +249,71 @@ def create_project():
         # Go back to the home page
         flash(f"Project '{name}' created", "success")
         return redirect("/")
+
+
+# -----------------------------------------------------------
+# Route for adding a thing, using data posted from a form
+# - Restricted to logged in users
+# -----------------------------------------------------------
+@app.post("/task")
+@login_required
+def create_task():
+    # Get the data from the form
+    name = request.form.get("name")
+    description = request.form.get("description")
+    priority = request.form.get("priority")
+    deadline = request.form.get("deadline")
+    group = request.form.get("group")
+    project = request.form.get("project")
+    category = request.form.get("category")
+
+    # Sanitise the text inputs
+    name = html.escape(name)
+    description = html.escape(description)
+
+    # Get the user id from the session
+    userid = session["userid"]
+
+    with connect_db() as client:
+        # Add the thing to the DB
+        sql = """
+            INSERT INTO tasks 
+                (name, description, priority, created_timestamp, deadline_timestamp, "group") 
+            VALUES (?, ?, ?, ?, ?, ?)
+        """
+        params = [name, description, priority, utc_timestamp_now(), deadline, group]
+        result = client.execute(sql, params)
+        task_id = result.last_insert_rowid
+
+        # Assign the task to the user who created it
+        sql = "INSERT INTO assigned_to (task, user) VALUES (?, ?)"
+        params = [task_id, userid]
+        client.execute(sql, params)
+
+        # Go back to the project page
+        flash(f"Task '{name}' created", "success")
+        return redirect(f"/project/{project}/category/{category}")
+
+
+# -----------------------------------------------------------
+# Gets the users associated with a project for autocomplete on the front end
+# -----------------------------------------------------------
+@app.get("/api/project/<int:project_id>/members")
+def project_members(project_id):
+    q = request.args.get("q", "")  # query string e.g. ?q=jam
+
+    with connect_db() as client:
+        sql = """
+            SELECT username
+            FROM users u
+            JOIN project_members pm ON u.id = pm.user_id
+            WHERE pm.project_id = ? AND username LIKE ?
+            ORDER BY username
+        """
+        result = client.execute(sql, (project_id, f"{q}%")).fetchall()
+
+    usernames = [row[0] for row in result]
+    return jsonify(usernames)
 
 
 # -----------------------------------------------------------
