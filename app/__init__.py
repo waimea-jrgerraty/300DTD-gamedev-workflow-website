@@ -6,7 +6,17 @@
 # ===========================================================
 
 
-from flask import Flask, render_template, flash, redirect, jsonify, request, session
+from flask import (
+    Flask,
+    Response,
+    render_template,
+    flash,
+    redirect,
+    jsonify,
+    send_file,
+    request,
+    session,
+)
 from werkzeug.security import generate_password_hash, check_password_hash
 import html
 import base64
@@ -19,6 +29,7 @@ from app.helpers.auth import login_required
 from app.helpers.time import init_datetime, utc_timestamp, utc_timestamp_now
 from io import BytesIO
 from PIL import Image
+from datetime import timedelta
 
 
 # Create the app
@@ -169,6 +180,8 @@ def category_root(project_id: int, category_id: int):
         params = [project_id]
         tasks = client.execute(sql, params)
 
+        print(tasks.rows)
+
         # Did we get a result?
         if project.rows:
             # yes, so show it on the page
@@ -278,10 +291,10 @@ def create_task():
         # Add the thing to the DB
         sql = """
             INSERT INTO tasks 
-                (name, description, priority, created_timestamp, deadline_timestamp, "group") 
-            VALUES (?, ?, ?, ?, ?, ?)
+                (name, description, priority, deadline_timestamp, "group") 
+            VALUES (?, ?, ?, ?, ?)
         """
-        params = [name, description, priority, utc_timestamp_now(), deadline, group]
+        params = [name, description, priority, deadline, group]
         result = client.execute(sql, params)
         task_id = result.last_insert_rowid
 
@@ -351,6 +364,37 @@ def register_form():
 @app.get("/user/login")
 def login_form():
     return render_template("pages/user-login.jinja")
+
+
+# -----------------------------------------------------------
+# Route for getting a users icon image
+# -----------------------------------------------------------
+@app.get("/user/<int:id>/icon")
+def user_icon(id: int):
+    with connect_db() as client:
+        sql = "SELECT icon_data, icon_mime FROM users WHERE id = ?"
+        params = [id]
+        result = client.execute(sql, params)
+
+        if result.rows:
+            row = result.rows[0]
+            icon_data = row["icon_data"]
+            icon_mime = row["icon_mime"]
+
+            if icon_data and icon_mime:
+                # Stream the blob back with the correct content type and caching headers
+                response = Response(icon_data, mimetype=icon_mime)
+                response.headers["cache-control"] = (
+                    f"public, max-age={timedelta(days=7).total_seconds()}"
+                )
+                return response
+
+    # Return a default icon if none is set
+    return send_file(
+        "/static/images/placeholder.svg",
+        mimetype="image/svg+xml",
+        cache_timeout=timedelta(days=7).total_seconds(),
+    )
 
 
 # -----------------------------------------------------------

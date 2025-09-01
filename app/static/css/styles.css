@@ -81,6 +81,40 @@
     color: var(--pico-color-red-650);
 }
 
+#main {
+    display: flex;
+}
+
+#categories {
+    width: 20%;
+    border-right: 2px solid var(--pico-muted-border-color);
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+#taskPanel {
+    width: 80%;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    overflow-x: auto;
+}
+
+.group {
+    width: 20rem;
+}
+
+.task {
+    width: 100%;
+    border: 2px solid var(--pico-muted-border-color);
+}
+
+.taskFooter {
+    display: flex;
+}
+
 /* ABOUT PAGE -------------------------------------------- */
 
 #tech-stack {

@@ -25,6 +25,8 @@
             <form action="/task" method="post">
                 <input type="hidden" name="project" value="{{ project.id }}">
                 <input type="hidden" name="category" value="{{ category.id }}">
+                {# This value will need to be changed by javascript for the full version #}
+                <input type="hidden" name="group" value="9">
                 <label for="taskName">
                     Task Name <span class="required">*</span>
                 </label>
@@ -48,4 +50,62 @@
         </div>
     </div>
     <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
+    <div id="main">
+        <div id="categories"></div>
+        <div id="taskPanel">
+            {# TODO: Proper grouping #}
+            <article class="group">
+                <header>
+                    <h2>Tasks</h2>
+                </header>
+                {% for task in tasks %}
+                    <article class="task">
+                        <h3>{{ task.task_name }}</h3>
+                        <div class="taskFooter">
+                            <div class="userIcons">
+                                {% if task.assigned_user_ids %}
+                                    {% set user_ids = task.assigned_user_ids.split(',') %}
+                                    {% for user_id in user_ids[:3] %}
+                                        <img src="/user/{{ user_id }}/icon"
+                                             alt="User {{ user_id }}"
+                                             class="user-icon"
+                                             height="64"
+                                             width="64">
+                                    {% endfor %}
+                                    {% if user_ids|length > 3 %}<span class="ellipsis">…</span>{% endif %}
+                                {% else %}
+                                    <span class="no-users">No users assigned</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                    {# Pico modal (to open, add the open attribute) #}
+                    <dialog>
+                        <article class="taskModal">
+                            <h2>{{ task.task_name }}</h2>
+                            <textarea readonly>{{task.description}}</textarea>
+                            <footer>
+                                <form action="/task/{{ task.id }}/complete" method="post">
+                                    <button type="submit" class="complete-btn">
+                                        <span class="material-symbols-outlined">
+                                            {% if task.task_completed_timestamp %}
+                                                check_box
+                                            {% else %}
+                                                check_box_outline_blank
+                                            {% endif %}
+                                        </span>
+                                        {% if task.task_completed_timestamp %}
+                                            Mark as Incomplete
+                                        {% else %}
+                                            Mark as Complete
+                                        {% endif %}
+                                    </button>
+                                </form>
+                            </footer>
+                        </article>
+                    </dialog>
+                {% endfor %}
+            </article>
+        </div>
+    </div>
 {% endblock content %}
