@@ -27,23 +27,46 @@
             <footer>
                 <div role="group">
                     <div class="userIcons">
-                        {% if task.assigned_user_ids %}
-                            {% set users = task.assigned_user_ids.split(',') %}
+                        {% set users = task.assigned_users | from_json %}
+                        {% if users %}
                             {% for user in users[:8] %}
-                                {% set parts = user.split(':') %}
-                                {% set user_id = parts[0] %}
-                                {% set user_name = parts[1] %}
-                                <img src="/user/{{ user_id }}/icon"
-                                     alt="User {{ user_name }}"
+                                <img src="/user/{{ user.id }}/icon"
+                                     alt="{{ user.username }}"
                                      class="user-icon"
                                      height="64"
                                      width="64"
-                                     aria-label="{{ user_name }}">
+                                     aria-label="{{ user.username }}">
                             {% endfor %}
                             {% if users|length > 8 %}<span class="ellipsis">…</span>{% endif %}
                         {% else %}
                             <span class="no-users">No users assigned</span>
                         {% endif %}
+                        <!-- Trigger button -->
+                        <button id="open-add-user"
+                                data-task-id="{{ task.task_id }}"
+                                data-project-id="{{ project.id }}">+</button>
+                        <!-- Modal -->
+                        <dialog id="add-user-modal">
+                            <article>
+                                <header>
+                                    <h3>Add user to task</h3>
+                                </header>
+                                <label for="member-input">Search project members</label>
+                                <input id="member-input"
+                                       type="text"
+                                       placeholder="Start typing a name or username…"
+                                       list="project-members"
+                                       autocomplete="off">
+                                <datalist id="project-members"></datalist>
+                                <output id="add-user-error" role="status"></output>
+                                <footer>
+                                    <button id="cancel-add-user" class="secondary">Cancel</button>
+                                    <button id="confirm-add-user">Add</button>
+                                </footer>
+                            </article>
+                        </dialog>
+                        <!-- Load your external JS -->
+                        <script src="{{ url_for('static', filename='js/add_user_modal.js') }}"></script>
                     </div>
                     <form action="/task/{{ task.id }}/complete" method="post">
                         <button type="submit" class="complete-btn">

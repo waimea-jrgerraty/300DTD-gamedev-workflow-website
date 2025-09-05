@@ -20,6 +20,7 @@ from flask import (
 from werkzeug.security import generate_password_hash, check_password_hash
 import html
 import base64
+import json
 
 from app.helpers.session import init_session
 from app.helpers.db import connect_db
@@ -40,6 +41,14 @@ init_session(app)  # Setup a session for messages, etc.
 init_logging(app)  # Log requests
 init_error(app)  # Handle errors and exceptions
 init_datetime(app)  # Handle UTC dates in timestamps
+
+
+@app.template_filter("from_json")
+def from_json(value):
+    try:
+        return json.loads(value)
+    except (TypeError, ValueError):
+        return []
 
 
 # -----------------------------------------------------------
@@ -166,7 +175,14 @@ def category_root(project_id: int, category_id: int):
                 t.created_timestamp AS task_created_timestamp,
                 t.completed_timestamp AS task_completed_timestamp,
                 t.deadline_timestamp  AS task_deadline_timestamp,
-                GROUP_CONCAT(u.id || ":" || u.username) AS assigned_users
+                COALESCE(
+                    json_group_array(
+                        json_object(
+                            'id', u.id,
+                            'username', u.username
+                        )
+                    ), '[]'
+                ) AS assigned_users
             FROM tasks t
             LEFT JOIN assigned_to a
                 ON a.task = t.id
@@ -233,7 +249,14 @@ def task_root(project_id: int, category_id: int, task_id: int):
                 t.created_timestamp AS task_created_timestamp,
                 t.completed_timestamp AS task_completed_timestamp,
                 t.deadline_timestamp  AS task_deadline_timestamp,
-                GROUP_CONCAT(u.id || ":" || u.username) AS assigned_users
+                COALESCE(
+                    json_group_array(
+                        json_object(
+                            'id', u.id,
+                            'username', u.username
+                        )
+                    ), '[]'
+                ) AS assigned_users
             FROM tasks t
             LEFT JOIN assigned_to a
                 ON a.task = t.id
@@ -377,20 +400,31 @@ def create_task():
 # -----------------------------------------------------------
 @app.get("/api/project/<int:project_id>/members")
 def project_members(project_id: int):
-    q = request.args.get("q", "")  # query string e.g. ?q=jam
-
     with connect_db() as client:
+        # Get all users assigned to this project
         sql = """
-            SELECT username
+            SELECT u.id, u.username
             FROM users u
-            JOIN member_of mo ON u.id = mo.user
-            WHERE mo.project = ? AND username LIKE ?
-            ORDER BY username
-        """
-        result = client.execute(sql, (project_id, f"{q}%")).fetchall()
+            JOIN member_of m ON u.id = m.user
+            JOIN projects p ON p.id = m.project
+            WHERE p.id = ?
+            
+            UNION
 
-    usernames = [row[0] for row in result]
-    return jsonify(usernames)
+            SELECT u.id, u.username
+            FROM users u
+            JOIN projects p ON p.owner = u.id
+            WHERE p.id = ?
+
+            ORDER BY u.username;
+        """
+        params = [project_id, project_id]
+        rows = client.execute(sql, params)
+
+        # Convert rows to list of dicts
+        members = [{"id": r["id"], "username": r["username"]} for r in rows]
+
+    return jsonify(members)
 
 
 # -----------------------------------------------------------
@@ -426,7 +460,7 @@ def update_description(task_id: int):
         result = client.execute(sql, params)
 
         if not result.rows:
-            jsonify({"success": False, "error": "Task not found"})
+            return jsonify({"success": False, "error": "Task not found"}), 404
 
         # Check if the user is a member of the project or the owner
         sql = """
@@ -441,7 +475,7 @@ def update_description(task_id: int):
         result = client.execute(sql, params)
 
         if not result.rows:
-            jsonify({"success": False, "error": "Access denied"})
+            return jsonify({"success": False, "error": "Access denied"}), 403
 
         # Update the task description
         sql = "UPDATE tasks SET description = ? WHERE id = ?"
@@ -451,25 +485,58 @@ def update_description(task_id: int):
     return jsonify({"success": True})
 
 
-# -----------------------------------------------------------
-# Route for deleting a thing, Id given in the route
-# - Restricted to logged in users
-# -----------------------------------------------------------
-# @app.get("/delete/<int:id>")
-# @login_required
-# def delete_a_thing(id):
-#     # Get the user id from the session
-#     user_id = session["user_id"]
+@app.post("/api/tasks/<int:task_id>/assign")
+@login_required
+def assign_user_to_task(task_id):
+    data = request.get_json(silent=True)
+    if not data or "user_id" not in data:
+        return jsonify({"success": False, "error": "Missing user_id"}), 400
 
-#     with connect_db() as client:
-#         # Delete the thing from the DB only if we own it
-#         sql = "DELETE FROM things WHERE id=? AND user_id=?"
-#         params = [id, user_id]
-#         client.execute(sql, params)
+    user_id = data["user_id"]
 
-#         # Go back to the home page
-#         flash("Thing deleted", "success")
-#         return redirect("/things")
+    with connect_db() as client:
+        # Get the project id for this task
+        # sql = """
+        #     SELECT p.id AS project_id
+        #     FROM tasks t
+        #     JOIN "group" g ON g.id = t."group"
+        #     JOIN category c ON c.id = g.category
+        #     JOIN project p ON p.id = c.project
+        #     WHERE t.id = ?;
+        # """
+        # Testing without categories and groups
+        sql = """
+            SELECT p.id AS project_id
+            FROM tasks t
+            JOIN projects p ON p.id = t."group"
+            WHERE t.id = ?;
+        """
+        params = [task_id]
+        result = client.execute(sql, params)
+
+        if not result.rows:
+            return jsonify({"success": False, "error": "Task not found"}), 404
+
+        # Check if the user is a member of the project or the owner
+        sql = """
+            SELECT 1
+            FROM projects p
+            LEFT JOIN member_of m ON p.id = m.project AND m.user = ?
+            WHERE p.id = ? 
+                AND (p.owner = ? OR m.user IS NOT NULL)
+            LIMIT 1;
+        """
+        params = [session["userid"], result.rows[0]["project_id"], session["userid"]]
+        result = client.execute(sql, params)
+
+        if not result.rows:
+            return jsonify({"success": False, "error": "Access denied"}), 403
+
+        sql = """INSERT OR IGNORE INTO assigned_to (task, user) VALUES (?, ?)"""
+        params = [task_id, user_id]
+        result = client.execute(sql, params)
+
+    return jsonify({"success": True, "rows_affected": result.rows_affected})
 
 
 # -----------------------------------------------------------
