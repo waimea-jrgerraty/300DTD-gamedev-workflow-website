@@ -108,6 +108,9 @@
 
 .task {
     width: 100%;
+}
+
+.task article {
     border: 2px solid var(--pico-muted-border-color);
 }
 

@@ -59,51 +59,38 @@
                     <h2>Tasks</h2>
                 </header>
                 {% for task in tasks %}
-                    <article class="task">
-                        <h3>{{ task.task_name }}</h3>
-                        <div class="taskFooter">
-                            <div class="userIcons">
-                                {% if task.assigned_user_ids %}
-                                    {% set user_ids = task.assigned_user_ids.split(',') %}
-                                    {% for user_id in user_ids[:3] %}
-                                        <img src="/user/{{ user_id }}/icon"
-                                             alt="User {{ user_id }}"
-                                             class="user-icon"
-                                             height="64"
-                                             width="64">
-                                    {% endfor %}
-                                    {% if user_ids|length > 3 %}<span class="ellipsis">…</span>{% endif %}
-                                {% else %}
-                                    <span class="no-users">No users assigned</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </article>
-                    {# Pico modal (to open, add the open attribute) #}
-                    <dialog>
-                        <article class="taskModal">
-                            <h2>{{ task.task_name }}</h2>
-                            <textarea readonly>{{task.description}}</textarea>
-                            <footer>
-                                <form action="/task/{{ task.id }}/complete" method="post">
-                                    <button type="submit" class="complete-btn">
-                                        <span class="material-symbols-outlined">
-                                            {% if task.task_completed_timestamp %}
-                                                check_box
-                                            {% else %}
-                                                check_box_outline_blank
-                                            {% endif %}
-                                        </span>
-                                        {% if task.task_completed_timestamp %}
-                                            Mark as Incomplete
+                    <a class="task priority-{{ task.priority }}"
+                       href="/project/{{ project.id }}/category/{{ category.id }}/task/{{ task.task_id }}">
+                        <article>
+                            <h3>{{ task.task_name }}</h3>
+                            <div class="taskFooter">
+                                <div role="group">
+                                    {% if task.task_description %}
+                                        <span class="material-symbols-outlined" title="Has Description">description</span>
+                                    {% endif %}
+                                    <div class="userIcons">
+                                        {% if task.assigned_user_ids %}
+                                            {% set users = task.assigned_user_ids.split(',') %}
+                                            {% for user in users[:3] %}
+                                                {% set parts = user.split(':') %}
+                                                {% set user_id = parts[0] %}
+                                                {% set user_name = parts[1] %}
+                                                <img src="/user/{{ user_id }}/icon"
+                                                     alt="User {{ user_name }}"
+                                                     class="user-icon"
+                                                     height="64"
+                                                     width="64"
+                                                     aria-label="{{ user_name }}">
+                                            {% endfor %}
+                                            {% if users|length > 3 %}<span class="ellipsis">…</span>{% endif %}
                                         {% else %}
-                                            Mark as Complete
+                                            <span class="no-users">No users assigned</span>
                                         {% endif %}
-                                    </button>
-                                </form>
-                            </footer>
+                                    </div>
+                                </div>
+                            </div>
                         </article>
-                    </dialog>
+                    </a>
                 {% endfor %}
             </article>
         </div>

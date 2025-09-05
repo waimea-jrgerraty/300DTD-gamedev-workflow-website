@@ -1,0 +1,88 @@
+{#=====================================================
+  Home page
+  - Hero style greeting banner
+  - List of things passed in as 'things' array
+  - Form for adding a new thing
+=====================================================#}
+{% extends "pages/base.jinja" %}
+{% block title %}
+    TaskForge - {{ project.name }}
+{% endblock title %}
+{% block nav_centre %}
+    <h3>
+        <span class="weak">/ {{ project.name }}</span>
+    </h3>
+{% endblock nav_centre %}
+{% block content %}
+    <div id="fluid">
+        <article class="taskMain">
+            <header>
+                <h3>{{ task.task_name }}</h3>
+            </header>
+            <textarea id="task-description"
+                      rows="8"
+                      data-task-id="{{ task.task_id }}"
+                      placeholder="Edit Description...">{{task.task_description}}</textarea>
+            <script src="{{ url_for('static', filename='js/description.js') }}"></script>
+            <footer>
+                <div role="group">
+                    <div class="userIcons">
+                        {% if task.assigned_user_ids %}
+                            {% set users = task.assigned_user_ids.split(',') %}
+                            {% for user in users[:8] %}
+                                {% set parts = user.split(':') %}
+                                {% set user_id = parts[0] %}
+                                {% set user_name = parts[1] %}
+                                <img src="/user/{{ user_id }}/icon"
+                                     alt="User {{ user_name }}"
+                                     class="user-icon"
+                                     height="64"
+                                     width="64"
+                                     aria-label="{{ user_name }}">
+                            {% endfor %}
+                            {% if users|length > 8 %}<span class="ellipsis">…</span>{% endif %}
+                        {% else %}
+                            <span class="no-users">No users assigned</span>
+                        {% endif %}
+                    </div>
+                    <form action="/task/{{ task.id }}/complete" method="post">
+                        <button type="submit" class="complete-btn">
+                            <span class="material-symbols-outlined">
+                                {% if task.task_completed_timestamp %}
+                                    check_box
+                                {% else %}
+                                    check_box_outline_blank
+                                {% endif %}
+                            </span>
+                            {% if task.task_completed_timestamp %}
+                                Mark as Incomplete
+                            {% else %}
+                                Mark as Complete
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </footer>
+            {# {% for task in tasks %}
+                <a class="task" href="/project/{{ project.id }}/category/{{ category.id }}/task/{{ task.task_id }}">
+                    <article>
+                        <h3>{{ task.task_name }}</h3>
+                        <div class="taskFooter">
+                            <div class="userIcons">
+                                {% if task.assigned_user_ids %}
+                                    {% set user_ids = task.assigned_user_ids.split(',') %}
+                                    {% for user_id in user_ids[:3] %}
+                                        <img src="/user/{{ user_id }}/icon" alt="User {{ user_id }}" class="user-icon" height="64" width="64">
+                                    {% endfor %}
+                                    {% if user_ids|length > 3 %}<span class="ellipsis">…</span>{% endif %}
+                                {% else %}
+                                    <span class="no-users">No users assigned</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                </a>
+            {% endfor %} #}
+        </article>
+    </div>
+{% endblock content %}

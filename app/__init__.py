@@ -7,13 +7,13 @@
 
 
 from flask import (
-    Flask,
     Response,
+    Flask,
     render_template,
-    flash,
+    send_file,
     redirect,
     jsonify,
-    send_file,
+    flash,
     request,
     session,
 )
@@ -127,7 +127,7 @@ def project_root(project_id: int):
 
 
 # -----------------------------------------------------------
-# Project root route, redirect to first valid category
+# Project/category route, display all tasks in this category
 # -----------------------------------------------------------
 @app.get("/project/<int:project_id>/category/<int:category_id>")
 @login_required
@@ -156,7 +156,7 @@ def category_root(project_id: int, category_id: int):
         params = [project_id]
         project = client.execute(sql, params)
         # Will need to redo the joins and such when implementing categories and groups
-        # Will probably move this to a separate root for categories /project<int:project>/category<int:category>
+        # Not all selected values will be used on the category page, can be optimized later
         sql = """
             SELECT 
                 t.id                AS task_id,
@@ -166,7 +166,7 @@ def category_root(project_id: int, category_id: int):
                 t.created_timestamp AS task_created_timestamp,
                 t.completed_timestamp AS task_completed_timestamp,
                 t.deadline_timestamp  AS task_deadline_timestamp,
-                GROUP_CONCAT(u.id) AS assigned_users
+                GROUP_CONCAT(u.id || ":" || u.username) AS assigned_users
             FROM tasks t
             LEFT JOIN assigned_to a
                 ON a.task = t.id
@@ -180,8 +180,6 @@ def category_root(project_id: int, category_id: int):
         params = [project_id]
         tasks = client.execute(sql, params)
 
-        print(tasks.rows)
-
         # Did we get a result?
         if project.rows:
             # yes, so show it on the page
@@ -190,6 +188,72 @@ def category_root(project_id: int, category_id: int):
                 project=project.rows[0],
                 tasks=tasks.rows,
                 category={"id": 1},  # testing
+            )
+
+        else:
+            # No, so show error
+            return not_found_error()
+
+
+# -----------------------------------------------------------
+# Project/category/task route, display detailed info for this task
+# -----------------------------------------------------------
+@app.get("/project/<int:project_id>/category/<int:category_id>/task/<int:task_id>")
+@login_required
+def task_root(project_id: int, category_id: int, task_id: int):
+    with connect_db() as client:
+        # FOR FINAL RELEASE:
+        # Implement categories and groups
+
+        # Check if the user is a member of the project or the owner
+        sql = """
+            SELECT 1
+            FROM projects p
+            LEFT JOIN member_of m ON p.id = m.project AND m.user = ?
+            WHERE p.id = ? 
+                AND (p.owner = ? OR m.user IS NOT NULL)
+            LIMIT 1;
+        """
+        params = [session["userid"], project_id, session["userid"]]
+        result = client.execute(sql, params)
+        if not result.rows:
+            flash("You do not have access to that task", "error")
+            return redirect("/")
+
+        # Get all information about the project
+        sql = """SELECT * FROM projects WHERE id = ?"""
+        params = [project_id]
+        project = client.execute(sql, params)
+        sql = """
+            SELECT 
+                t.id                AS task_id,
+                t.name              AS task_name,
+                t.priority          AS task_priority,
+                t.description       AS task_description,
+                t.created_timestamp AS task_created_timestamp,
+                t.completed_timestamp AS task_completed_timestamp,
+                t.deadline_timestamp  AS task_deadline_timestamp,
+                GROUP_CONCAT(u.id || ":" || u.username) AS assigned_users
+            FROM tasks t
+            LEFT JOIN assigned_to a
+                ON a.task = t.id
+            LEFT JOIN users u
+                ON u.id = a.user
+            WHERE t.id = ?
+            GROUP BY 
+                t.id, t.name, t.priority, t.description, 
+                t.created_timestamp, t.completed_timestamp, t.deadline_timestamp;
+        """
+        params = [task_id]
+        task = client.execute(sql, params)
+
+        # Did we get a result?
+        if project.rows and task.rows:
+            # yes, so show it on the page
+            return render_template(
+                "pages/task.jinja",
+                project=project.rows[0],
+                task=task.rows[0],
             )
 
         else:
@@ -312,21 +376,79 @@ def create_task():
 # Gets the users associated with a project for autocomplete on the front end
 # -----------------------------------------------------------
 @app.get("/api/project/<int:project_id>/members")
-def project_members(project_id):
+def project_members(project_id: int):
     q = request.args.get("q", "")  # query string e.g. ?q=jam
 
     with connect_db() as client:
         sql = """
             SELECT username
             FROM users u
-            JOIN project_members pm ON u.id = pm.user_id
-            WHERE pm.project_id = ? AND username LIKE ?
+            JOIN member_of mo ON u.id = mo.user
+            WHERE mo.project = ? AND username LIKE ?
             ORDER BY username
         """
         result = client.execute(sql, (project_id, f"{q}%")).fetchall()
 
     usernames = [row[0] for row in result]
     return jsonify(usernames)
+
+
+# -----------------------------------------------------------
+# Updates the description of a task
+# -----------------------------------------------------------
+@app.post("/api/update-description/<int:task_id>")
+@login_required
+def update_description(task_id: int):
+    data = request.get_json()
+    description = data.get("description")
+
+    # Sanitise the text inputs
+    description = html.escape(description)
+
+    with connect_db() as client:
+        # Get the project id for this task
+        # sql = """
+        #     SELECT p.id AS project_id
+        #     FROM tasks t
+        #     JOIN "group" g ON g.id = t."group"
+        #     JOIN category c ON c.id = g.category
+        #     JOIN project p ON p.id = c.project
+        #     WHERE t.id = ?;
+        # """
+        # Testing without categories and groups
+        sql = """
+            SELECT p.id AS project_id
+            FROM tasks t
+            JOIN projects p ON p.id = t."group"
+            WHERE t.id = ?;
+        """
+        params = [task_id]
+        result = client.execute(sql, params)
+
+        if not result.rows:
+            jsonify({"success": False, "error": "Task not found"})
+
+        # Check if the user is a member of the project or the owner
+        sql = """
+            SELECT 1
+            FROM projects p
+            LEFT JOIN member_of m ON p.id = m.project AND m.user = ?
+            WHERE p.id = ? 
+                AND (p.owner = ? OR m.user IS NOT NULL)
+            LIMIT 1;
+        """
+        params = [session["userid"], result.rows[0]["project_id"], session["userid"]]
+        result = client.execute(sql, params)
+
+        if not result.rows:
+            jsonify({"success": False, "error": "Access denied"})
+
+        # Update the task description
+        sql = "UPDATE tasks SET description = ? WHERE id = ?"
+        params = [description, task_id]
+        client.execute(sql, params)
+
+    return jsonify({"success": True})
 
 
 # -----------------------------------------------------------
