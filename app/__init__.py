@@ -21,6 +21,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import html
 import base64
 import json
+import os
 
 from app.helpers.session import init_session
 from app.helpers.db import connect_db
@@ -561,14 +562,14 @@ def login_form():
 @app.get("/user/<int:id>/icon")
 def user_icon(id: int):
     with connect_db() as client:
-        sql = "SELECT icon_data, icon_mime FROM users WHERE id = ?"
+        sql = "SELECT image_blob, image_mime FROM users WHERE id = ?"
         params = [id]
         result = client.execute(sql, params)
 
         if result.rows:
             row = result.rows[0]
-            icon_data = row["icon_data"]
-            icon_mime = row["icon_mime"]
+            icon_data = row["image_blob"]
+            icon_mime = row["image_mime"]
 
             if icon_data and icon_mime:
                 # Stream the blob back with the correct content type and caching headers
@@ -578,12 +579,18 @@ def user_icon(id: int):
                 )
                 return response
 
-    # Return a default icon if none is set
-    return send_file(
-        "/static/images/placeholder.svg",
-        mimetype="image/svg+xml",
-        cache_timeout=timedelta(days=7).total_seconds(),
+    # Return placeholder as a Response
+    placeholder_path = os.path.join(
+        app.root_path, "static", "images", "placeholder.svg"
     )
+    with open(placeholder_path, "rb") as f:
+        icon_data = f.read()
+
+    response = Response(icon_data, mimetype="image/svg+xml")
+    response.headers["cache-control"] = (
+        f"public, max-age={timedelta(days=7).total_seconds()}"
+    )
+    return response
 
 
 # -----------------------------------------------------------
