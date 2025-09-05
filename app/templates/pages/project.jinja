@@ -69,18 +69,15 @@
                                         <span class="material-symbols-outlined" title="Has Description">description</span>
                                     {% endif %}
                                     <div class="userIcons">
-                                        {% if task.assigned_user_ids %}
-                                            {% set users = task.assigned_user_ids.split(',') %}
+                                        {% set users = task.assigned_users | from_json %}
+                                        {% if users %}
                                             {% for user in users[:3] %}
-                                                {% set parts = user.split(':') %}
-                                                {% set user_id = parts[0] %}
-                                                {% set user_name = parts[1] %}
-                                                <img src="/user/{{ user_id }}/icon"
-                                                     alt="User {{ user_name }}"
+                                                <img src="/user/{{ user.id }}/icon"
+                                                     alt="{{ user.username }}"
                                                      class="user-icon"
                                                      height="64"
                                                      width="64"
-                                                     aria-label="{{ user_name }}">
+                                                     aria-label="{{ user.username }}">
                                             {% endfor %}
                                             {% if users|length > 3 %}<span class="ellipsis">…</span>{% endif %}
                                         {% else %}
