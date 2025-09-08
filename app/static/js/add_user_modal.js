@@ -81,8 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             await assignUserToTask(user.id);
             modal.close();
-            // Optional: refresh UI
-            // location.reload();
+            location.reload();
         } catch (err) {
             errorOut.textContent = err.message;
         }

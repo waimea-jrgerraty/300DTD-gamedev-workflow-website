@@ -8,10 +8,37 @@
 {% block title %}
     TaskForge - {{ project.name }}
 {% endblock title %}
+{% block nav_left %}
+    {% if project.owner == session.userid %}
+        <li>
+            <button id="p-open-add-user" data-project-id="{{ project.id }}">
+                <span class="material-symbols-outlined">group_add</span>
+            </button>
+        </li>
+        <dialog id="p-add-user-modal">
+            <article>
+                <header>
+                    <h3>Add user to project</h3>
+                </header>
+                <input id="p-member-input"
+                       type="text"
+                       placeholder="Type a username..."
+                       autocomplete="off">
+                <output id="p-add-user-error" role="status"></output>
+                <footer>
+                    <button id="p-cancel-add-user" class="secondary">Cancel</button>
+                    <button id="p-confirm-add-user">Add</button>
+                </footer>
+            </article>
+        </dialog>
+    {% endif %}
+{% endblock nav_left %}
 {% block nav_centre %}
-    <h3>
-        <span class="weak">/ {{ project.name }}</span>
-    </h3>
+    <li>
+        <h3>
+            <span class="weak">{{ project.name }}</span>
+        </h3>
+    </li>
 {% endblock nav_centre %}
 {% block content %}
     {# New task form #}

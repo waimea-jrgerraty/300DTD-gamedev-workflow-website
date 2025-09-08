@@ -278,6 +278,7 @@ def task_root(project_id: int, category_id: int, task_id: int):
                 "pages/task.jinja",
                 project=project.rows[0],
                 task=task.rows[0],
+                category={"id": category_id},
             )
 
         else:
@@ -486,9 +487,49 @@ def update_description(task_id: int):
     return jsonify({"success": True})
 
 
+@app.post("/api/projects/<int:project_id>/assign")
+@login_required
+def add_user_to_project(project_id: int):
+    data = request.get_json(silent=True)
+    if not data or "user_id" not in data:
+        return jsonify({"success": False, "error": "Missing username"}), 400
+
+    username = data["username"]
+
+    with connect_db() as client:
+        # Check if the user is a member of the project or the owner
+        sql = """
+            SELECT 1
+            FROM projects p
+            LEFT JOIN member_of m ON p.id = m.project AND m.user = ?
+            WHERE p.id = ? 
+                AND (p.owner = ? OR m.user IS NOT NULL)
+            LIMIT 1;
+        """
+        params = [session["userid"], result.rows[0]["project_id"], session["userid"]]
+        result = client.execute(sql, params)
+
+        if not result.rows:
+            return jsonify({"success": False, "error": "Access denied"}), 403
+
+        # Get the user id from the username
+        sql = """SELECT id FROM users WHERE username = ?"""
+        params = [username]
+        result = client.execute(sql, params)
+
+        if not result.rows:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        sql = """INSERT OR IGNORE INTO member_of (project, user) VALUES (?, ?)"""
+        params = [project_id, username]
+        result = client.execute(sql, params)
+
+    return jsonify({"success": True, "rows_affected": result.rows_affected})
+
+
 @app.post("/api/tasks/<int:task_id>/assign")
 @login_required
-def assign_user_to_task(task_id):
+def assign_user_to_task(task_id: int):
     data = request.get_json(silent=True)
     if not data or "user_id" not in data:
         return jsonify({"success": False, "error": "Missing user_id"}), 400
