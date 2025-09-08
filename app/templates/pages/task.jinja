@@ -6,12 +6,19 @@
 =====================================================#}
 {% extends "pages/base.jinja" %}
 {% block title %}
-    TaskForge - {{ project.name }}
+    TaskForge - {{ task.task_name }}
 {% endblock title %}
 {% block nav_centre %}
-    <h3>
-        <span class="weak">/ {{ project.name }}</span>
-    </h3>
+    <li>
+        <h3>
+            <a href="/project/{{ project.id }}/category/{{ category.id }}">{{ project.name }}</a>
+        </h3>
+    </li>
+    <li>
+        <h3>
+            <span class="weak">{{ task.task_name }}</span>
+        </h3>
+    </li>
 {% endblock nav_centre %}
 {% block content %}
     <div id="fluid">
@@ -30,12 +37,13 @@
                         {% set users = task.assigned_users | from_json %}
                         {% if users %}
                             {% for user in users[:8] %}
-                                <img src="/user/{{ user.id }}/icon"
-                                     alt="{{ user.username }}"
-                                     class="user-icon"
-                                     height="64"
-                                     width="64"
-                                     aria-label="{{ user.username }}">
+                                <span data-tooltip="{{ user.username }}">
+                                    <img src="/user/{{ user.id }}/icon"
+                                         alt="{{ user.username }}"
+                                         class="user-icon"
+                                         height="64"
+                                         width="64">
+                                </span>
                             {% endfor %}
                             {% if users|length > 8 %}<span class="ellipsis">…</span>{% endif %}
                         {% else %}
@@ -44,7 +52,9 @@
                         <!-- Trigger button -->
                         <button id="open-add-user"
                                 data-task-id="{{ task.task_id }}"
-                                data-project-id="{{ project.id }}">+</button>
+                                data-project-id="{{ project.id }}">
+                            <span class="material-symbols-outlined">person_add</span>
+                        </button>
                         <!-- Modal -->
                         <dialog id="add-user-modal">
                             <article>
@@ -54,7 +64,7 @@
                                 <label for="member-input">Search project members</label>
                                 <input id="member-input"
                                        type="text"
-                                       placeholder="Start typing a name or username…"
+                                       placeholder="Start typing a username…"
                                        list="project-members"
                                        autocomplete="off">
                                 <datalist id="project-members"></datalist>
@@ -86,26 +96,6 @@
                     </form>
                 </div>
             </footer>
-            {# {% for task in tasks %}
-                <a class="task" href="/project/{{ project.id }}/category/{{ category.id }}/task/{{ task.task_id }}">
-                    <article>
-                        <h3>{{ task.task_name }}</h3>
-                        <div class="taskFooter">
-                            <div class="userIcons">
-                                {% if task.assigned_user_ids %}
-                                    {% set user_ids = task.assigned_user_ids.split(',') %}
-                                    {% for user_id in user_ids[:3] %}
-                                        <img src="/user/{{ user_id }}/icon" alt="User {{ user_id }}" class="user-icon" height="64" width="64">
-                                    {% endfor %}
-                                    {% if user_ids|length > 3 %}<span class="ellipsis">…</span>{% endif %}
-                                {% else %}
-                                    <span class="no-users">No users assigned</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </article>
-                </a>
-            {% endfor %} #}
         </article>
     </div>
 {% endblock content %}
