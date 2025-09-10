@@ -59,6 +59,12 @@
                             {% endif %}
                             <span class="name">{{ project.name }}</span>
                             {# Need a form to accept or decline #}
+                            <form method="post" action="/project/{{ project.id }}/respond">
+                                <fieldset role="group">
+                                    <button type="submit" name="response" value="accept" class="contrast">Accept</button>
+                                    <button type="submit" name="response" value="decline" class="secondary">Decline</button>
+                                </fieldset>
+                            </form>
                         </li>
                     {% endfor %}
                     {% for project in hidden_inactive_projects %}
