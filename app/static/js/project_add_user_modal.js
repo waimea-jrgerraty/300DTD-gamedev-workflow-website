@@ -44,7 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
         try {
-            await assignUserToProject(user.id);
+            await assignUserToProject(user);
             modal.close();
         } catch (err) {
             errorOut.textContent = err.message;

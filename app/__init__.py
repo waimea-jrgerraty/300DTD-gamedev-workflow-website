@@ -491,7 +491,7 @@ def update_description(task_id: int):
 @login_required
 def add_user_to_project(project_id: int):
     data = request.get_json(silent=True)
-    if not data or "user_id" not in data:
+    if not data or "username" not in data:
         return jsonify({"success": False, "error": "Missing username"}), 400
 
     username = data["username"]
@@ -506,7 +506,7 @@ def add_user_to_project(project_id: int):
                 AND (p.owner = ? OR m.user IS NOT NULL)
             LIMIT 1;
         """
-        params = [session["userid"], result.rows[0]["project_id"], session["userid"]]
+        params = [session["userid"], project_id, session["userid"]]
         result = client.execute(sql, params)
 
         if not result.rows:
@@ -520,8 +520,15 @@ def add_user_to_project(project_id: int):
         if not result.rows:
             return jsonify({"success": False, "error": "User not found"}), 404
 
-        sql = """INSERT OR IGNORE INTO member_of (project, user) VALUES (?, ?)"""
-        params = [project_id, username]
+        sql = """
+            INSERT OR IGNORE INTO member_of (project, user, invited) 
+            VALUES (
+                ?, 
+                (SELECT id FROM users WHERE username = ?), 
+                ?
+            )
+        """
+        params = [project_id, username, True]
         result = client.execute(sql, params)
 
     return jsonify({"success": True, "rows_affected": result.rows_affected})
