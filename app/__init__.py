@@ -534,6 +534,35 @@ def add_user_to_project(project_id: int):
     return jsonify({"success": True, "rows_affected": result.rows_affected})
 
 
+@app.post("/project/<int:project_id>/respond")
+@login_required
+def respond_to_invite(project_id: int):
+    response = request.form.get("response")
+
+    if response == "accept":
+        sql = """
+            UPDATE member_of
+            SET active = TRUE
+            WHERE project = ? and user = ?
+        """
+        params = [project_id, session["userid"]]
+    elif response == "decline":
+        sql = """
+            UPDATE member_of
+            SET active = FALSE
+            WHERE project = ? and user = ?
+        """
+        params = [project_id, session["userid"]]
+    else:
+        flash("Invalid response", "error")
+        return redirect("/")
+
+    with connect_db() as client:
+        client.execute(sql, params)
+
+    return redirect("/")
+
+
 @app.post("/api/tasks/<int:task_id>/assign")
 @login_required
 def assign_user_to_task(task_id: int):
@@ -662,7 +691,7 @@ def add_user():
         if result.rows_affected == 0:
             # Handle if a username is already taken
             flash("Username already taken.", "error")
-            return redirect("/register")
+            return redirect("/user/register")
         else:
             # Sign the user in immediately
             session["userid"] = result.last_insert_rowid
@@ -714,7 +743,7 @@ def login_user():
 
         # Either username not found, or password was wrong
         flash("Invalid credentials", "error")
-        return redirect("/login")
+        return redirect("/user/login")
 
 
 # -----------------------------------------------------------

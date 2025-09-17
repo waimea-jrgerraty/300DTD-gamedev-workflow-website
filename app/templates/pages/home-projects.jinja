@@ -11,10 +11,6 @@
 {% block content %}
     <div id="fluid">
         <h1>Projects</h1>
-        {# TODO:
-            Turn the icon thing into a macro
-            Turn the invitation thing into a macro
-         #}
         {# New project form #}
         <button id="openModalBtn" class="floating-button">
             <span class="material-symbols-outlined">add_2</span>
@@ -41,7 +37,7 @@
         {% if inactive_projects or hidden_inactive_projects %}
             <h2>Invitations</h2>
             <article>
-                <ul class="invitations">
+                <ul class="invitations" id="invites">
                     {% for project in inactive_projects %}
                         <li class="project">
                             {% if project.icon_data and project.icon_mime %}
@@ -84,15 +80,24 @@
                             {% endif %}
                             <span class="name">{{ project.name }}</span>
                             {# Need a form to accept or decline #}
+                            <form method="post" action="/project/{{ project.id }}/respond">
+                                <fieldset role="group">
+                                    <button type="submit" name="response" value="accept" class="contrast">Accept</button>
+                                    <button type="submit" name="response" value="decline" class="secondary">Decline</button>
+                                </fieldset>
+                            </form>
                         </li>
                     {% endfor %}
                 </ul>
-                <footer>
-                    <label>
-                        <input type="checkbox" id="toggle-inactive">
-                        Show rejected invitations
-                    </label>
-                </footer>
+                {% if inactive_projects %}
+                    <footer>
+                        <label>
+                            <input type="checkbox" id="toggle-inactive">
+                            Show rejected invitations
+                        </label>
+                    </footer>
+                    <script src="{{ url_for('static', filename='js/toggle_inactive_invites.js') }}"></script>
+                {% endif %}
             </article>
         {% endif %}
         {# Projects you are a member of #}

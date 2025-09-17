@@ -118,16 +118,13 @@
     display: flex;
 }
 
-/* ABOUT PAGE -------------------------------------------- */
-
-#tech-stack {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
+.hidden_inactive {
+    display: none;
 }
 
-#tech-stack article {
-    flex: 1;
+.user-icon {
+    border-radius: 50%;
+    object-fit: cover;
 }
 
 /* FONTS -------------------------------------------- */
