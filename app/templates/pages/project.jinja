@@ -100,12 +100,14 @@
                                         {% set users = task.assigned_users | from_json %}
                                         {% if users %}
                                             {% for user in users[:3] %}
-                                                <img src="/user/{{ user.id }}/icon"
-                                                     alt="{{ user.username }}"
-                                                     class="user-icon"
-                                                     height="64"
-                                                     width="64"
-                                                     aria-label="{{ user.username }}">
+                                                <a href="/user/{{ user.id }}/profile" data-tooltip="{{ user.username }}">
+                                                    <img src="/user/{{ user.id }}/icon"
+                                                         alt="{{ user.username }}"
+                                                         class="user-icon"
+                                                         height="64"
+                                                         width="64"
+                                                         aria-label="{{ user.username }}">
+                                                </a>
                                             {% endfor %}
                                             {% if users|length > 3 %}<span class="ellipsis">…</span>{% endif %}
                                         {% else %}

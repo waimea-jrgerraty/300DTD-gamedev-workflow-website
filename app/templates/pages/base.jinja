@@ -21,6 +21,7 @@
             {% endblock title %}
         </title>
         <script src="/static/js/utils.js"></script>
+        <script src="{{ url_for('static', filename='js/dropdown.js') }}"></script>
         <link rel="stylesheet"
               href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.fluid.classless.red.min.css">
         <link rel="stylesheet"
@@ -52,14 +53,27 @@
                 </ul>
                 <ul>
                     {% if session.logged_in %}
-                        {#
-                            Eventually we want to display the users icon, and clicking that will
-                            open a dropdown menu with the button to sign out.
-                         #}
+                        <li class="nav-username">{{ session.username }}</li>
                         <li>
-                            <a href="/user/logout">Sign Out</a>
+                            <div class="dropdown">
+                                <button class="dropdown-btn">
+                                    <img src="/user/{{ session.userid }}/icon"
+                                         alt="{{ session.username }}"
+                                         class="user-icon"
+                                         id="nav-user-icon"
+                                         height="64"
+                                         width="64" />
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="option-important" href="/user/logout">Sign out</a>
+                                    </li>
+                                    <li>
+                                        <a href="/user/{{ session.userid }}/profile">Profile</a>
+                                    </li>
+                                </ul>
+                            </div>
                         </li>
-                        <li>{{ session.username }}</li>
                     {% else %}
                         <li>
                             <a href="/user/login">Sign In</a>

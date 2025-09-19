@@ -300,7 +300,29 @@ def crop_center(img: Image.Image) -> Image.Image:
 
 
 # -----------------------------------------------------------
-# Route for adding a thing, using data posted from a form
+# Route for setting a tasks completed status
+# - Restricted to logged in users
+# -----------------------------------------------------------
+@app.get("/project/<int:project_id>/category/<int:category_id>/task/<int:task_id>")
+@login_required
+def toggle_completed(project_id: int, category_id: int, task_id: int):
+    # Toggle the completed boolean in the database
+
+    sql = """
+        UPDATE tasks
+        SET completed_timestamp = 
+            CASE 
+                WHEN completed_timestamp IS NULL THEN CURRENT_TIMESTAMP
+                ELSE NULL
+            END
+        WHERE id = ?;
+    """
+
+    return redirect(f"/project/{project_id}/category/{category_id}/task/{task_id}")
+
+
+# -----------------------------------------------------------
+# Route for adding a project, using data posted from a form
 # - Restricted to logged in users
 # -----------------------------------------------------------
 @app.post("/project")
@@ -617,6 +639,60 @@ def assign_user_to_task(task_id: int):
     return jsonify({"success": True, "rows_affected": result.rows_affected})
 
 
+# PATCH: Update role
+@app.route("/api/user/<int:user_id>/role", methods=["PATCH"])
+def update_role(user_id: int):
+    data = request.get_json()
+    new_role = data.get("role")
+    if new_role not in ROLES:  # ROLES = list of roles you defined
+        return jsonify({"error": "Invalid role"}), 400
+
+    with connect_db() as client:
+        sql = "UPDATE users SET role = ? WHERE id = ?"
+        params = [new_role, user_id]
+        client.execute(sql, params)
+
+    return jsonify({"role": new_role})
+
+
+# PATCH: Update avatar
+@app.route("/api/user/<int:user_id>/avatar", methods=["PATCH"])
+def update_avatar(user_id: int):
+    file = request.files.get("avatar")
+    if not file:
+        return jsonify({"error": "No file"}), 400
+
+    # Extract the image data if possible
+
+    try:
+        # Resize to 256x256 using Pillow
+        img = (
+            crop_center(Image.open(file))
+            .convert("RGBA")
+            .resize((256, 256), Image.Resampling.LANCZOS)
+        )
+
+        # Save as a PNG
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        buffer.seek(0)
+
+        image_data = buffer.read()
+        image_mime = "image/png"
+
+        # image_data = image_file.read()  # store raw binary
+        # image_mime = image_file.mimetype  # e.g. "image/png"
+    except:
+        return jsonify({"error": "Invalid image upload"}), 400
+
+    with connect_db() as client:
+        sql = "UPDATE users SET image_blob = ?, image_mime = ? WHERE id = ?"
+        params = [image_data, image_mime, user_id]
+        client.execute(sql, params)
+
+    return jsonify({"status": "ok"})
+
+
 # -----------------------------------------------------------
 # User registration form route
 # -----------------------------------------------------------
@@ -631,6 +707,34 @@ def register_form():
 @app.get("/user/login")
 def login_form():
     return render_template("pages/user-login.jinja")
+
+
+# -----------------------------------------------------------
+# Route for viewing a user's profile
+# -----------------------------------------------------------
+
+# Load roles from JSON file
+with open("app/config/roles.json", "r", encoding="utf-8") as f:
+    ROLES = json.load(f)
+
+
+@app.get("/user/<int:id>/profile")
+def profile(id: int):
+    with connect_db() as client:
+        sql = """
+            SELECT id, username, role
+            FROM users
+            WHERE id = ?
+        """
+        params = [id]
+        result = client.execute(sql, params)
+
+        if result.rows:
+            return render_template(
+                "pages/profile.jinja", user=result.rows[0], roles=ROLES
+            )
+        else:
+            return not_found_error()
 
 
 # -----------------------------------------------------------

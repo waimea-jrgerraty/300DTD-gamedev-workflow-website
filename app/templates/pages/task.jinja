@@ -63,13 +63,13 @@
                         {% set users = task.assigned_users | from_json %}
                         {% if users %}
                             {% for user in users[:8] %}
-                                <span data-tooltip="{{ user.username }}">
+                                <a href="/user/{{ user.id }}/profile" data-tooltip="{{ user.username }}">
                                     <img src="/user/{{ user.id }}/icon"
                                          alt="{{ user.username }}"
                                          class="user-icon"
                                          height="64"
                                          width="64">
-                                </span>
+                                </a>
                             {% endfor %}
                             {% if users|length > 8 %}<span class="ellipsis">…</span>{% endif %}
                         {% else %}
@@ -104,7 +104,7 @@
                         <!-- Load your external JS -->
                         <script src="{{ url_for('static', filename='js/add_user_modal.js') }}"></script>
                     </div>
-                    <form action="/task/{{ task.id }}/complete" method="post">
+                    <form action="/task/{{ task.task_id }}/complete" method="post">
                         <button type="submit" class="complete-btn">
                             <span class="material-symbols-outlined">
                                 {% if task.task_completed_timestamp %}

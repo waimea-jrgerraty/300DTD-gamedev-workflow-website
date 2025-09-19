@@ -1,0 +1,47 @@
+{#=====================================================
+  Home page
+  - Hero style greeting banner
+  - List of things passed in as 'things' array
+  - Form for adding a new thing
+=====================================================#}
+{% extends "pages/base.jinja" %}
+{% block title %}
+    TaskForge
+{% endblock title %}
+{% block content %}
+    <div id="fluid">
+        <section id="profile">
+            <div id="profile-container" data-userid="{{ user.id }}">
+                <!-- Left column: Avatar -->
+                <div id="profile-left">
+                    <img src="/user/{{ user.id }}/icon"
+                         alt="{{ user.username }}'s avatar"
+                         id="profile-avatar"
+                         height="256"
+                         width="256">
+                    {% if session.userid == user.id %}
+                        <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+                        <input type="file" id="avatar-input" accept="image/*">
+                        <button id="avatar-btn">Change Avatar</button>
+                    {% endif %}
+                </div>
+                <!-- Right column: User info -->
+                <div id="profile-right">
+                    <h1>{{ user.username }}</h1>
+                    <p class="role">
+                        Current Role: <span id="current-role">{{ user.role }}</span>
+                    </p>
+                    {% if session.userid == user.id %}
+                        <label for="role-select">Change Role:</label>
+                        <select id="role-select">
+                            {% for role_option in roles %}
+                                <option value="{{ role_option }}"
+                                        {% if role_option == user.role %}selected{% endif %}>{{ role_option }}</option>
+                            {% endfor %}
+                        </select>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+    </div>
+{% endblock content %}

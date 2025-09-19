@@ -127,6 +127,135 @@
     object-fit: cover;
 }
 
+.option-important {
+    color: var(--pico-color-red-400) !important;
+}
+
+.nav-username {
+    font-weight: bold;
+}
+
+/* Home page -------------------------------------------- */
+
+#hero {
+    text-align: center;
+    padding: 4rem 1rem;
+}
+
+#hero p {
+    font-size: 1.25rem;
+    max-width: 40rem;
+    margin: 1rem auto;
+}
+
+#features {
+    margin: 3rem auto;
+    max-width: 60rem;
+    text-align: center;
+}
+
+#features-grid {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin-top: 2rem;
+}
+
+/* Profile page -------------------------------------------- */
+
+#profile-container {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: 60rem;
+    margin: 2rem auto;
+    gap: 2rem;
+}
+
+#profile-left {
+    flex: 0 0 200px;
+    text-align: center;
+}
+
+#profile-avatar {
+    /* width: 150px;
+    height: 150px; */
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--pico-muted-border-color);
+    margin-bottom: 1rem;
+}
+
+#profile-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+#role-select {
+    margin-top: 0.5rem;
+    max-width: 300px;
+}
+
+#avatar-btn {
+    display: block;
+    margin: 0.5rem auto;
+}
+
+/* Dropdown menu -------------------------------------------- */
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+/* .dropdown-btn img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+} */
+
+.dropdown-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    min-width: 150px;
+    background-color: var(--pico-background);
+    border: 2px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: none;
+    z-index: 1000;
+}
+
+.dropdown-menu li {
+    width: 100%;
+    margin: 0;
+    padding-top: 0.25rem;
+    padding-bottom: 0.5rem;
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.dropdown-menu a:hover {
+    background: var(--pico-muted-border-color);
+}
+
 /* FONTS -------------------------------------------- */
 
 .material-symbols-outlined {

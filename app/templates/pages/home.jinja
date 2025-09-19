@@ -10,22 +10,35 @@
 {% endblock title %}
 {% block content %}
     <div id="fluid">
-        <h1>Flask Demo App with Turso DB and User Accounts</h1>
-        <p>
-            This is a simple Flask app that connects to a Turso database to save and retrieve data, and also manage user accounts. This can be used as the basis of your web app.
-        </p>
-        <p>It includes...</p>
-        <ul>
-            <li>Example routes</li>
-            <li>Example static pages</li>
-            <li>Missing page and server error pages</li>
-            <li>DB connection and error handling</li>
-            <li>Example CRUD actions: Create and Delete</li>
-            <li>User account creation</li>
-            <li>User login / logout</li>
-            <li>Adaption of menus / routes / content based on login status</li>
-            <li>Flash messages for information</li>
-        </ul>
-        <a href="/things" role="button">Go to the Things...</a>
+        <header id="hero">
+            <h1>TaskForge</h1>
+            <p>
+                Forge your projects into reality. TaskForge is a task management platform
+                designed for <strong>game development teams</strong>. Create projects,
+                invite collaborators, and organize tasks into categories built for game dev pipelines.
+            </p>
+            <p>
+                <a href="/user/register">
+                    <button>Get Started</button>
+                </a>
+            </p>
+        </header>
+        <section id="features">
+            <h2>Why TaskForge?</h2>
+            <div id="features-grid">
+                <article>
+                    <h3>Create & Manage Projects</h3>
+                    <p>Start new projects with ease, whether you're building a small indie game or a massive studio production.</p>
+                </article>
+                <article>
+                    <h3>Collaborate with Teams</h3>
+                    <p>Invite artists, developers, and designers. Keep everyone aligned and productive.</p>
+                </article>
+                <article>
+                    <h3>Organize by Categories</h3>
+                    <p>Break down your workflow into categories like Art, Code, Audio, and Design for seamless tracking.</p>
+                </article>
+            </div>
+        </section>
     </div>
 {% endblock content %}
