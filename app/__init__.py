@@ -762,7 +762,7 @@ def user_icon(id: int):
 
     # Return placeholder as a Response
     placeholder_path = os.path.join(
-        app.root_path, "static", "images", "placeholder.svg"
+        app.root_path, "static", "images", "Default_pfp.svg"
     )
     with open(placeholder_path, "rb") as f:
         icon_data = f.read()
