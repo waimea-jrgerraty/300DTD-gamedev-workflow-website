@@ -26,7 +26,17 @@ The key functionality of the web app was implemented:
 - The project page, which strips out the categories and groups for now, listing tasks in one box. The styling needs to be fixed for final refinement, and categories and groups need implementing.
 - The task page, which allows you to edit the description, which syncs to the database when the textbox loses focus. The assign to task system and mark as completed button was also implemented for the MVP.
 
-**PLACE SCREENSHOTS AND/OR ANIMATED GIFS OF THE SYSTEM HERE**
+![](screenshots/initial_implementation/hero.png)
+![](screenshots/initial_implementation/sign_in.png)
+![](screenshots/initial_implementation/new_project.png)
+![](screenshots/initial_implementation/projects.png)
+![](screenshots/initial_implementation/new_task.png)
+![](screenshots/initial_implementation/tasks.png)
+![](screenshots/initial_implementation/task_view.png)
+![](screenshots/initial_implementation/invite.png)
+![](screenshots/initial_implementation/invitations.png)
+![](screenshots/initial_implementation/add_to_task.png)
+![](screenshots/initial_implementation/added_to_task.png)
 
 
 ---
