@@ -370,6 +370,26 @@ def create_project():
         params = [name, userid, image_data, image_mime]
         client.execute(sql, params)
 
+        # Create some default categories
+        project_id = client.last_insert_rowid()
+
+        # Load default categories from JSON
+        with open("config/dft_categories.json", "r", encoding="utf-8") as f:
+            categories = json.load(f)
+
+        # Insert each category
+        for category_name in categories:
+            # Insert category
+            sql_cat = "INSERT INTO categories (name, project_id) VALUES (?, ?)"
+            client.execute(sql_cat, [category_name, project_id])
+
+            # Insert default group for this category
+            sql_group = """
+            INSERT INTO groups (name, category_name, category_project, "order")
+            VALUES (?, ?, ?, ?)
+            """
+            client.execute(sql_group, ["Tasks", category_name, project_id, 1])
+
         # Go back to the home page
         flash(f"Project '{name}' created", "success")
         return redirect("/")
