@@ -53,8 +53,9 @@
             <form action="/task" method="post">
                 <input type="hidden" name="project" value="{{ project.id }}">
                 <input type="hidden" name="category" value="{{ category.id }}">
-                {# This value will need to be changed by javascript for the full version #}
-                <input type="hidden" name="group" value="{{ project.id }}">
+                <input type="hidden" name="group" value="">
+                {# filled by JS when adding task #}
+                {# FIXME: this needs to be a dropdown in the form to select the task group, since the button is not on the group but global and in the corner #}
                 <label for="taskName">
                     Task Name <span class="required">*</span>
                 </label>
@@ -79,47 +80,53 @@
     </div>
     <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
     <div id="main">
+        {# TODO: Iterate over categories #}
         <div id="categories"></div>
         <div id="taskPanel">
             {# TODO: Proper grouping #}
-            <article class="group">
-                <header>
-                    <h2>Tasks</h2>
-                </header>
-                {% for task in tasks %}
-                    <a class="task priority-{{ task.priority }}"
-                       href="/project/{{ project.id }}/category/{{ category.id }}/task/{{ task.task_id }}">
-                        <article>
-                            <h3>{{ task.task_name }}</h3>
-                            <div class="taskFooter">
-                                <div role="group">
-                                    {% if task.task_description %}
-                                        <span class="material-symbols-outlined" title="Has Description">description</span>
-                                    {% endif %}
-                                    <div class="userIcons">
-                                        {% set users = task.assigned_users | from_json %}
-                                        {% if users %}
-                                            {% for user in users[:3] %}
-                                                <a href="/user/{{ user.id }}/profile" data-tooltip="{{ user.username }}">
-                                                    <img src="/user/{{ user.id }}/icon"
-                                                         alt="{{ user.username }}"
-                                                         class="user-icon"
-                                                         height="64"
-                                                         width="64"
-                                                         aria-label="{{ user.username }}">
-                                                </a>
-                                            {% endfor %}
-                                            {% if users|length > 3 %}<span class="ellipsis">…</span>{% endif %}
-                                        {% else %}
-                                            <span class="no-users">No users assigned</span>
-                                        {% endif %}
+            {% for group in groups %}
+                {% set tasks = group.tasks | from_json %}
+                <article class="group">
+                    <header>
+                        <h2>{{ group.group_name }}</h2>
+                    </header>
+                    {% if tasks %}
+                        {% for task in tasks %}
+                            <a class="task priority-{{ task.priority }}"
+                               href="/project/{{ project.id }}/category/{{ category.id }}/task/{{ task.task_id }}">
+                                <article>
+                                    <h3>{{ task.task_name }}</h3>
+                                    <div class="taskFooter">
+                                        <div role="group">
+                                            {% if task.task_description %}
+                                                <span class="material-symbols-outlined" title="Has Description">description</span>
+                                            {% endif %}
+                                            <div class="userIcons">
+                                                {% set users = task.assigned_users | from_json %}
+                                                {% if users %}
+                                                    {% for user in users[:3] %}
+                                                        <a href="/user/{{ user.id }}/profile" data-tooltip="{{ user.username }}">
+                                                            <img src="/user/{{ user.id }}/icon"
+                                                                 alt="{{ user.username }}"
+                                                                 class="user-icon"
+                                                                 height="64"
+                                                                 width="64"
+                                                                 aria-label="{{ user.username }}">
+                                                        </a>
+                                                    {% endfor %}
+                                                    {% if users|length > 3 %}<span class="ellipsis">…</span>{% endif %}
+                                                {% else %}
+                                                    <span class="no-users">No users assigned</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        </article>
-                    </a>
-                {% endfor %}
-            </article>
+                                </article>
+                            </a>
+                        {% endfor %}
+                    {% endif %}
+                </article>
+            {% endfor %}
         </div>
     </div>
 {% endblock content %}

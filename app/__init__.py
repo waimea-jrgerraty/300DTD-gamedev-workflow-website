@@ -112,9 +112,6 @@ def index():
 @app.get("/project/<int:project_id>/")
 @login_required
 def project_root(project_id: int):
-    # Skip for MVP
-    return redirect(f"/project/{project_id}/category/1")
-
     with connect_db() as client:
         # Authentication is done on the category route
         sql = """
@@ -143,9 +140,6 @@ def project_root(project_id: int):
 @login_required
 def category_root(project_id: int, category_id: int):
     with connect_db() as client:
-        # FOR FINAL RELEASE:
-        # Implement categories and groups
-
         # Check if the user is a member of the project or the owner
         sql = """
             SELECT 1
@@ -165,37 +159,50 @@ def category_root(project_id: int, category_id: int):
         sql = """SELECT * FROM projects WHERE id = ?"""
         params = [project_id]
         project = client.execute(sql, params)
-        # Will need to redo the joins and such when implementing categories and groups
+        # Get all categories for the project
+        sql = """SELECT c.name, c.id FROM categories c WHERE project = ?"""
+        params = [project_id]
+        categories = client.execute(sql, params)
         # Not all selected values will be used on the category page, can be optimized later
         sql = """
             SELECT 
-                t.id                AS task_id,
-                t.name              AS task_name,
-                t.priority          AS task_priority,
-                t.description       AS task_description,
-                t.created_timestamp AS task_created_timestamp,
-                t.completed_timestamp AS task_completed_timestamp,
-                t.deadline_timestamp  AS task_deadline_timestamp,
+                g.id                AS group_id,
+                g.name              AS group_name,
+                g."order"           AS group_order,
                 COALESCE(
                     json_group_array(
                         json_object(
-                            'id', u.id,
-                            'username', u.username
+                            'id', t.id,
+                            'name', t.name,
+                            'priority', t.priority,
+                            'description', t.description,
+                            'created_timestamp', t.created_timestamp,
+                            'completed_timestamp', t.completed_timestamp,
+                            'deadline_timestamp', t.deadline_timestamp,
+                            'assigned_users', COALESCE(
+                                (
+                                    SELECT json_group_array(
+                                        json_object('id', u.id, 'username', u.username)
+                                    )
+                                    FROM assigned_to a
+                                    LEFT JOIN users u ON u.id = a.user
+                                    WHERE a.task = t.id
+                                ), '[]'
+                            )
                         )
                     ), '[]'
-                ) AS assigned_users
-            FROM tasks t
-            LEFT JOIN assigned_to a
-                ON a.task = t.id
-            LEFT JOIN users u
-                ON u.id = a.user
-            WHERE t."group" = ?
-            GROUP BY 
-                t.id, t.name, t.priority, t.description, 
-                t.created_timestamp, t.completed_timestamp, t.deadline_timestamp;
+                ) AS tasks
+            FROM task_groups g
+            LEFT JOIN tasks t
+                ON t."group" = g.id
+            INNER JOIN categories c
+                ON g.category = c.id
+            WHERE c.id = ?
+            GROUP BY g.id, g.name, g."order"
+            ORDER BY g."order";
         """
         params = [project_id]
-        tasks = client.execute(sql, params)
+        groups = client.execute(sql, params)
 
         # Did we get a result?
         if project.rows:
@@ -203,8 +210,9 @@ def category_root(project_id: int, category_id: int):
             return render_template(
                 "pages/project.jinja",
                 project=project.rows[0],
-                tasks=tasks.rows,
-                category={"id": 1},  # testing
+                groups=groups.rows,
+                category={"id": category_id},
+                categories=categories.rows,
             )
 
         else:
@@ -368,27 +376,30 @@ def create_project():
         # Add the thing to the DB
         sql = "INSERT INTO projects (name, owner, icon_data, icon_mime) VALUES (?, ?, ?, ?)"
         params = [name, userid, image_data, image_mime]
-        client.execute(sql, params)
+        result = client.execute(sql, params)
 
         # Create some default categories
-        project_id = client.last_insert_rowid()
+        project_id = result.last_insert_rowid
 
         # Load default categories from JSON
-        with open("config/dft_categories.json", "r", encoding="utf-8") as f:
+        with open("app/config/dft_categories.json", "r", encoding="utf-8") as f:
             categories = json.load(f)
 
         # Insert each category
         for category_name in categories:
             # Insert category
-            sql_cat = "INSERT INTO categories (name, project_id) VALUES (?, ?)"
-            client.execute(sql_cat, [category_name, project_id])
+            sql_cat = "INSERT INTO categories (name, project) VALUES (?, ?)"
+            result = client.execute(sql_cat, [category_name, project_id])
+
+            # Get the category id
+            category_id = result.last_insert_rowid
 
             # Insert default group for this category
             sql_group = """
-            INSERT INTO groups (name, category_name, category_project, "order")
-            VALUES (?, ?, ?, ?)
+            INSERT INTO task_groups (name, category, "order")
+            VALUES (?, ?, ?)
             """
-            client.execute(sql_group, ["Tasks", category_name, project_id, 1])
+            client.execute(sql_group, ["Tasks", category_id, 1])
 
         # Go back to the home page
         flash(f"Project '{name}' created", "success")
