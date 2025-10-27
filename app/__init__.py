@@ -310,7 +310,9 @@ def crop_center(img: Image.Image) -> Image.Image:
 # Route for setting a tasks completed status
 # - Restricted to logged in users
 # -----------------------------------------------------------
-@app.get("/project/<int:project_id>/category/<int:category_id>/task/<int:task_id>")
+@app.get(
+    "/project/<int:project_id>/category/<int:category_id>/task/<int:task_id>/complete"
+)
 @login_required
 def toggle_completed(project_id: int, category_id: int, task_id: int):
     # Toggle the completed boolean in the database
@@ -447,11 +449,6 @@ def create_task():
         # Go back to the project page
         flash(f"Task '{name}' created", "success")
         return redirect(f"/project/{project}/category/{category}")
-
-
-@app.post("/task/<int:task_id>/complete")
-def task_complete(task_id: int):
-    return redirect("/")
 
 
 # -----------------------------------------------------------
