@@ -41,6 +41,39 @@
         </h3>
     </li>
 {% endblock nav_centre %}
+{% macro render_task(task, project, category, completed=False) %}
+    {% if task.id %}
+        <a class="task priority-{{ task.priority }} {% if completed %}completed{% endif %}"
+           href="/project/{{ project.id }}/category/{{ category.id }}/task/{{ task.id }}">
+            <article>
+                <h3>{{ task.name }}</h3>
+                <div class="taskFooter">
+                    <div role="group">
+                        {% if task.description %}<span class="material-symbols-outlined" title="Has Description">description</span>{% endif %}
+                        <div class="userIcons">
+                            {% set users = task.assigned_users | from_json %}
+                            {% if users %}
+                                {% for user in users[:3] %}
+                                    <a href="/user/{{ user.id }}/profile" data-tooltip="{{ user.username }}">
+                                        <img src="/user/{{ user.id }}/icon"
+                                             alt="{{ user.username }}"
+                                             class="user-icon"
+                                             height="64"
+                                             width="64"
+                                             aria-label="{{ user.username }}">
+                                    </a>
+                                {% endfor %}
+                                {% if users|length > 3 %}<span class="ellipsis">…</span>{% endif %}
+                            {% else %}
+                                <span class="no-users">No users assigned</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </a>
+    {% endif %}
+{% endmacro %}
 {% block content %}
     {# New task form #}
     <button id="openModalBtn" class="floating-button">
@@ -53,9 +86,10 @@
             <form action="/task" method="post">
                 <input type="hidden" name="project" value="{{ project.id }}">
                 <input type="hidden" name="category" value="{{ category.id }}">
-                <input type="hidden" name="group" value="">
-                {# filled by JS when adding task #}
-                {# FIXME: this needs to be a dropdown in the form to select the task group, since the button is not on the group but global and in the corner #}
+                <label for="group">Task Group</label>
+                <select id="group" name="group" required>
+                    {% for group in groups %}<option value="{{ group.group_id }}">{{ group.group_name }}</option>{% endfor %}
+                </select>
                 <label for="taskName">
                     Task Name <span class="required">*</span>
                 </label>
@@ -80,10 +114,13 @@
     </div>
     <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
     <div id="main">
-        {# TODO: Iterate over categories #}
-        <div id="categories"></div>
+        <div id="categories">
+            {% for cat in categories %}
+                <a class="category-button {% if cat.id == category.id %}selected{% endif %}"
+                   href="/project/{{ project.id }}/category/{{ cat.id }}">{{ cat.name }}</a>
+            {% endfor %}
+        </div>
         <div id="taskPanel">
-            {# TODO: Proper grouping #}
             {% for group in groups %}
                 {% set tasks = group.tasks | from_json %}
                 <article class="group">
@@ -91,42 +128,23 @@
                         <h2>{{ group.group_name }}</h2>
                     </header>
                     {% if tasks %}
-                        {% for task in tasks %}
-                            <a class="task priority-{{ task.priority }}"
-                               href="/project/{{ project.id }}/category/{{ category.id }}/task/{{ task.task_id }}">
-                                <article>
-                                    <h3>{{ task.task_name }}</h3>
-                                    <div class="taskFooter">
-                                        <div role="group">
-                                            {% if task.task_description %}
-                                                <span class="material-symbols-outlined" title="Has Description">description</span>
-                                            {% endif %}
-                                            <div class="userIcons">
-                                                {% set users = task.assigned_users | from_json %}
-                                                {% if users %}
-                                                    {% for user in users[:3] %}
-                                                        <a href="/user/{{ user.id }}/profile" data-tooltip="{{ user.username }}">
-                                                            <img src="/user/{{ user.id }}/icon"
-                                                                 alt="{{ user.username }}"
-                                                                 class="user-icon"
-                                                                 height="64"
-                                                                 width="64"
-                                                                 aria-label="{{ user.username }}">
-                                                        </a>
-                                                    {% endfor %}
-                                                    {% if users|length > 3 %}<span class="ellipsis">…</span>{% endif %}
-                                                {% else %}
-                                                    <span class="no-users">No users assigned</span>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </article>
-                            </a>
-                        {% endfor %}
+                        {% set active_tasks = tasks | selectattr('completed_timestamp', 'equalto', None) | list %}
+                        {% set completed_tasks = tasks | selectattr('completed_timestamp') | list %}
+                        {# Render active tasks #}
+                        {% for task in active_tasks %}{{ render_task(task, project, category) }}{% endfor %}
+                        {# Render completed tasks in collapsible section #}
+                        {% if completed_tasks %}
+                            <details class="completed-tasks">
+                                <summary>Completed Tasks ({{ completed_tasks | length }})</summary>
+                                <div class="completed-tasks-list">
+                                    {% for task in completed_tasks %}{{ render_task(task, project, category, completed=True) }}{% endfor %}
+                                </div>
+                            </details>
+                        {% endif %}
                     {% endif %}
                 </article>
             {% endfor %}
+            {# TODO: New group button #}
         </div>
     </div>
 {% endblock content %}

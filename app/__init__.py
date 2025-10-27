@@ -201,7 +201,7 @@ def category_root(project_id: int, category_id: int):
             GROUP BY g.id, g.name, g."order"
             ORDER BY g."order";
         """
-        params = [project_id]
+        params = [category_id]
         groups = client.execute(sql, params)
 
         # Did we get a result?
@@ -227,9 +227,6 @@ def category_root(project_id: int, category_id: int):
 @login_required
 def task_root(project_id: int, category_id: int, task_id: int):
     with connect_db() as client:
-        # FOR FINAL RELEASE:
-        # Implement categories and groups
-
         # Check if the user is a member of the project or the owner
         sql = """
             SELECT 1
@@ -249,6 +246,8 @@ def task_root(project_id: int, category_id: int, task_id: int):
         sql = """SELECT * FROM projects WHERE id = ?"""
         params = [project_id]
         project = client.execute(sql, params)
+
+        # Select information about the task
         sql = """
             SELECT 
                 t.id                AS task_id,
@@ -448,6 +447,11 @@ def create_task():
         # Go back to the project page
         flash(f"Task '{name}' created", "success")
         return redirect(f"/project/{project}/category/{category}")
+
+
+@app.post("/task/<int:task_id>/complete")
+def task_complete(task_id: int):
+    return redirect("/")
 
 
 # -----------------------------------------------------------

@@ -256,6 +256,48 @@
     background: var(--pico-muted-border-color);
 }
 
+/* Projects Page -------------------------------------------- */
+
+/* Base style for all category buttons */
+.category-button {
+    padding: 0.5rem 1rem;
+    width: 90%;
+    background-color: var(--pico-secondary-background);
+    /* adapts to dark/light theme */
+    color: var(--pico-text);
+    text-decoration: none;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    font-weight: 500;
+    border: 1px solid var(--pico-muted-border-color);
+}
+
+/* Hover effect for buttons */
+.category-button:hover {
+    background-color: var(--pico--secondary-background-hover, var(--pico-contrast));
+    color: var(--pico-text, var(--pico-color))
+}
+
+/* Style for the selected category button */
+.category-button.selected {
+    /* Pico primary color */
+    color: var(--pico-color);
+    /* text contrasts primary color */
+    border-color: var(--pico-primary-contrast, var(--pico-primary));
+    font-weight: 600;
+}
+
+.completed-tasks summary {
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 1rem;
+}
+
+.completed-tasks .completed-tasks-list .task.completed {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
 /* FONTS -------------------------------------------- */
 
 .material-symbols-outlined {
