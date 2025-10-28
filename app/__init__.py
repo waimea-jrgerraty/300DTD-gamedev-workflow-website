@@ -310,22 +310,39 @@ def crop_center(img: Image.Image) -> Image.Image:
 # Route for setting a tasks completed status
 # - Restricted to logged in users
 # -----------------------------------------------------------
-@app.get(
+@app.post(
     "/project/<int:project_id>/category/<int:category_id>/task/<int:task_id>/complete"
 )
 @login_required
 def toggle_completed(project_id: int, category_id: int, task_id: int):
-    # Toggle the completed boolean in the database
+    with connect_db() as client:
+        # Check if the user is a member of the project or the owner
+        sql = """
+            SELECT 1
+            FROM projects p
+            LEFT JOIN member_of m ON p.id = m.project AND m.user = ?
+            WHERE p.id = ? 
+                AND (p.owner = ? OR m.user IS NOT NULL)
+            LIMIT 1;
+        """
+        params = [session["userid"], project_id, session["userid"]]
+        result = client.execute(sql, params)
+        if not result.rows:
+            flash("You do not have access to that task", "error")
+            return redirect("/")
 
-    sql = """
-        UPDATE tasks
-        SET completed_timestamp = 
-            CASE 
-                WHEN completed_timestamp IS NULL THEN CURRENT_TIMESTAMP
-                ELSE NULL
-            END
-        WHERE id = ?;
-    """
+        # Toggle the completed boolean in the database
+
+        sql = """
+            UPDATE tasks
+            SET completed_timestamp = 
+                CASE 
+                    WHEN completed_timestamp IS NULL THEN CURRENT_TIMESTAMP
+                    ELSE NULL
+                END
+            WHERE id = ?;
+        """
+        client.execute(sql, [task_id])
 
     return redirect(f"/project/{project_id}/category/{category_id}/task/{task_id}")
 
@@ -409,6 +426,50 @@ def create_project():
 
 # -----------------------------------------------------------
 # Route for adding a thing, using data posted from a form
+# - Restricted to logged in users
+# -----------------------------------------------------------
+@app.post("/project/<int:project_id>/category/<int:category_id>/group")
+@login_required
+def add_group(project_id, category_id):
+    data = request.get_json()
+    name = data.get("name", "New Group").strip()
+    if not name:
+        return {"error": "Name required"}, 400
+
+    # Insert new group at the end (order = max + 1)
+
+    with connect_db() as client:
+        # Check if the user is a member of the project or the owner
+        sql = """
+            SELECT 1
+            FROM projects p
+            LEFT JOIN member_of m ON p.id = m.project AND m.user = ?
+            WHERE p.id = ? 
+                AND (p.owner = ? OR m.user IS NOT NULL)
+            LIMIT 1;
+        """
+        params = [session["userid"], project_id, session["userid"]]
+        result = client.execute(sql, params)
+
+        if not result.rows:
+            return jsonify({"status": "error", "error": "Access denied"}), 403
+
+        last_order = client.execute(
+            "SELECT MAX(`order`) FROM task_groups WHERE category = ?", [category_id]
+        )
+
+        last_order = last_order.rows[0] and last_order.rows[0][0] or 0
+
+        client.execute(
+            "INSERT INTO task_groups (name, category, `order`) VALUES (?, ?, ?)",
+            [name, category_id, last_order + 1],
+        )
+
+    return jsonify({"status": "ok", "name": name})
+
+
+# -----------------------------------------------------------
+# Route for adding a task, using data posted from a form
 # - Restricted to logged in users
 # -----------------------------------------------------------
 @app.post("/task")
@@ -497,19 +558,12 @@ def update_description(task_id: int):
 
     with connect_db() as client:
         # Get the project id for this task
-        # sql = """
-        #     SELECT p.id AS project_id
-        #     FROM tasks t
-        #     JOIN "group" g ON g.id = t."group"
-        #     JOIN category c ON c.id = g.category
-        #     JOIN project p ON p.id = c.project
-        #     WHERE t.id = ?;
-        # """
-        # Testing without categories and groups
         sql = """
             SELECT p.id AS project_id
             FROM tasks t
-            JOIN projects p ON p.id = t."group"
+            JOIN task_groups g ON g.id = t."group"
+            JOIN categories c ON c.id = g.category
+            JOIN projects p ON p.id = c.project
             WHERE t.id = ?;
         """
         params = [task_id]
@@ -539,6 +593,53 @@ def update_description(task_id: int):
         client.execute(sql, params)
 
     return jsonify({"success": True})
+
+
+@app.patch("/api/group/<int:group_id>/rename")
+def rename_group(group_id):
+    data = request.get_json()
+    new_name = data.get("name", "").strip()
+    if not new_name:
+        return {"error": "Invalid name"}, 400
+
+    # Sanitise the text input
+    new_name = html.escape(new_name)
+
+    with connect_db() as client:
+        # Get the project id for this task
+        sql = """
+            SELECT p.id AS project_id
+            FROM task_groups g
+            JOIN categories c ON c.id = g.category
+            JOIN projects p ON p.id = c.project
+            WHERE g.id = ?;
+        """
+        params = [group_id]
+        result = client.execute(sql, params)
+
+        if not result.rows:
+            return jsonify({"success": False, "error": "Group not found"}), 404
+
+        # Check if the user is a member of the project or the owner
+        sql = """
+            SELECT 1
+            FROM projects p
+            LEFT JOIN member_of m ON p.id = m.project AND m.user = ?
+            WHERE p.id = ? 
+                AND (p.owner = ? OR m.user IS NOT NULL)
+            LIMIT 1;
+        """
+        params = [session["userid"], result.rows[0]["project_id"], session["userid"]]
+        result = client.execute(sql, params)
+
+        if not result.rows:
+            return jsonify({"success": False, "error": "Access denied"}), 403
+
+        client.execute(
+            "UPDATE task_groups SET name = ? WHERE id = ?", [new_name, group_id]
+        )
+
+    return {"status": "ok", "name": new_name}
 
 
 @app.post("/api/projects/<int:project_id>/assign")

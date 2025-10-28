@@ -43,9 +43,9 @@
 {% endblock nav_centre %}
 {% macro render_task(task, project, category, completed=False) %}
     {% if task.id %}
-        <a class="task priority-{{ task.priority }} {% if completed %}completed{% endif %}"
+        <a class="task {% if completed %}completed{% endif %}"
            href="/project/{{ project.id }}/category/{{ category.id }}/task/{{ task.id }}">
-            <article>
+            <article class="priority-{{ task.priority }}">
                 <h3>{{ task.name }}</h3>
                 <div class="taskFooter">
                     <div role="group">
@@ -100,9 +100,9 @@
                     Priority <span class="required">*</span>
                 </label>
                 <select name="priority" id="priority" aria-label="Priority">
-                    <option selected value="1">1</option>
+                    <option value="1">1</option>
                     <option value="2">2</option>
-                    <option value="3">3</option>
+                    <option selected value="3">3</option>
                     <option value="4">4</option>
                     <option value="5">5</option>
                 </select>
@@ -113,6 +113,7 @@
         </div>
     </div>
     <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/edit_taskgroup.js') }}"></script>
     <div id="main">
         <div id="categories">
             {% for cat in categories %}
@@ -125,7 +126,12 @@
                 {% set tasks = group.tasks | from_json %}
                 <article class="group">
                     <header>
-                        <h2>{{ group.group_name }}</h2>
+                        <h2>
+                            <input type="text"
+                                   class="editable-group-name"
+                                   value="{{ group.group_name }}"
+                                   data-group-id="{{ group.group_id }}">
+                        </h2>
                     </header>
                     {% if tasks %}
                         {% set active_tasks = tasks | selectattr('completed_timestamp', 'equalto', None) | list %}
@@ -144,7 +150,11 @@
                     {% endif %}
                 </article>
             {% endfor %}
-            {# TODO: New group button #}
+            {# New group button #}
+            <button id="addGroupBtn"
+                    class="add-group-btn"
+                    data-project-id="{{ project.id }}"
+                    data-category-id="{{ category.id }}">＋</button>
         </div>
     </div>
 {% endblock content %}

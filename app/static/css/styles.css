@@ -258,6 +258,26 @@
 
 /* Projects Page -------------------------------------------- */
 
+.task {
+    text-decoration: none;
+}
+
+.priority-1 {
+    border-color: cornflowerblue !important;
+}
+
+.priority-2 {
+    border-color: mediumseagreen !important;
+}
+
+.priority-4 {
+    border-color: orange !important;
+}
+
+.priority-5 {
+    border-color: tomato !important;
+}
+
 /* Base style for all category buttons */
 .category-button {
     padding: 0.5rem 1rem;

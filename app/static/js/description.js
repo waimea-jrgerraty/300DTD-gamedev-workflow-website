@@ -1,3 +1,4 @@
+// Blur triggers when the element loses focus
 document.getElementById("task-description").addEventListener("blur", async function () {
     const taskId = this.dataset.taskId;
     const description = this.value;
