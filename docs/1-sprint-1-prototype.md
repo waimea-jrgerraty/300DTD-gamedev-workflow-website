@@ -78,14 +78,11 @@ This Figma demo shows the initial design for the UI 'flow':
 <iframe style="border: 1px solid rgba(0, 0, 0, 0.1);" width="800" height="450" src="https://embed.figma.com/proto/ohwO0llpl7a2nQXxnQp42v/TaskForge-UX-MVP?node-id=2-10&p=f&scaling=scale-down&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=2%3A6&embed-host=share" allowfullscreen></iframe>
 
 ### Testing
-
-Replace this text with notes about what you did to test the UI flow and the outcome of the testing.
+I sent this flow to my end users and explained a few things.
 
 ### Changes / Improvements
 
-Replace this text with notes any improvements you made as a result of the testing.
-
-*IMPROVED FIGMA FLOW - PLACE THE FIGMA EMBED CODE HERE - MAKE SURE IT IS SET SO THAT EVERYONE CAN ACCESS IT*
+My end users wanted a few changes, specifically wanting to separate the signin/signup page into separate pages. They also wanted to give tasks their own page, instead of having them as a modal on the project page.
 
 
 ---
@@ -96,17 +93,19 @@ The next stage of prototyping was to develop the layout for each screen of the U
 
 This Figma demo shows the initial layout design for the UI:
 
-*FIGMA PROTOTYPE - PLACE THE FIGMA EMBED CODE HERE - MAKE SURE IT IS SET SO THAT EVERYONE CAN ACCESS IT*
+<iframe style="border: 1px solid rgba(0, 0, 0, 0.1);" width="800" height="450" src="https://embed.figma.com/design/JmhWsaj3YcZOGiVqP5Xdx4/TaskForge-Iteration-1?embed-host=share" allowfullscreen></iframe>
+
+Here you can see that the design changes to the intial flow were made here, and it does actually improve the experience in my opinion.
 
 ### Testing
 
-Replace this text with notes about what you did to test the UI flow and the outcome of the testing.
+Once again I sent this to my end users. They were mostly happy with it but had some suggestions. Importantly, my end user with colourblindness liked the inital colour scheme.
 
 ### Changes / Improvements
 
-Replace this text with notes any improvements you made as a result of the testing.
+My end users recommended that I should remove the home button when you are logged out, since the TaskForge button bring you to the home page and there shouldn't be a reason to go back from the signin / signup pages. They also wanted me to move the logout button to a dropdown that can be accessed by pressing your profile picture on the right of the navbar. Another thing they suggested was to add an indicator to tasks in the task list that they have a description.
 
-*FIGMA IMPROVED PROTOTYPE - PLACE THE FIGMA EMBED CODE HERE - MAKE SURE IT IS SET SO THAT EVERYONE CAN ACCESS IT*
+<iframe style="border: 1px solid rgba(0, 0, 0, 0.1);" width="800" height="450" src="https://embed.figma.com/design/mcGcxTYbGyqfSV8D3sWyyk/TaskForge-Iteration-2?embed-host=share" allowfullscreen></iframe>
 
 
 ---
@@ -117,22 +116,38 @@ Having established the layout of the UI screens, the prototype was refined visua
 
 This Figma demo shows the UI with refinements applied:
 
-*FIGMA REFINED PROTOTYPE - PLACE THE FIGMA EMBED CODE HERE - MAKE SURE IT IS SET SO THAT EVERYONE CAN ACCESS IT*
+<iframe style="border: 1px solid rgba(0, 0, 0, 0.1);" width="800" height="450" src="https://embed.figma.com/design/oS8U2YxA5KP3MiF7c8wqcJ/TaskForge-Iteration-3?embed-host=share" allowfullscreen></iframe>
 
 ### Testing
 
-Replace this text with notes about what you did to test the UI flow and the outcome of the testing.
+My end users were happy with this final design, but when testing the improved initial design they had some issues. The button to add categories was distracting, and there was no clear indicator for when the task was due.
 
 ### Changes / Improvements
 
-Replace this text with notes any improvements you made as a result of the testing.
+To remove the add category button, we actually decided to remove the feature to add categories entirely, and provide the end users with a list of suitable categories for game development, as that is all that is needed for the scope of this website. We settled on an inital list of categories:
+- Art and Design
+- Game Design (includes writing)
+- Programming
+- Audio
+- QA and Testing
+- Production and Support
 
-*FIGMA IMPROVED REFINED PROTOTYPE - PLACE THE FIGMA EMBED CODE HERE - MAKE SURE IT IS SET SO THAT EVERYONE CAN ACCESS IT*
+I also decided to redesign the categories list.
+
+Discussing the priority colours for tasks (where the border colour changes depending on priority) with my colourblind user, we came up with a list of colours that would be understandable for them:
+5. Red
+4. Amber
+3. Grey (default border)
+2. Green
+1. Blue
+
+Despite having trouble with red and blue, the fact that they are ordered by priority means it will still be usable for them.
+I also applied this priority border to the task page, and implemented a Due date on the task list and a more detailed due date on the task page.
 
 
 ---
 
 ## Sprint Review
 
-Replace this text with a statement about how the sprint has moved the project forward - key success point, any things that didn't go so well, etc.
+This sprint was kind of a disaster due to me getting the flu in the middle of it. I did discuss stuff with my end users during this sprint, but was unable to record it since I was busy with the minimal viable product sprint by the time I recovered. Despite this, it did move the project forwards by finalizing a design and simplifying the database a little for me (you can no longer create custom categories).
 
