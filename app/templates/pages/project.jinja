@@ -5,9 +5,11 @@
   - Form for adding a new thing
 =====================================================#}
 {% extends "pages/base.jinja" %}
+
 {% block title %}
     TaskForge - {{ project.name }}
 {% endblock title %}
+
 {% block nav_left %}
     {% if project.owner == session.userid %}
         <li>
@@ -34,6 +36,7 @@
         <script src="{{ url_for('static', filename='js/project_add_user_modal.js') }}"></script>
     {% endif %}
 {% endblock nav_left %}
+
 {% block nav_centre %}
     <li>
         <h3>
@@ -41,32 +44,41 @@
         </h3>
     </li>
 {% endblock nav_centre %}
+
 {% macro render_task(task, project, category, completed=False) %}
     {% if task.id %}
-        <a class="task {% if completed %}completed{% endif %}"
+        <a class="task{% if completed %} completed{% endif %}"
            href="/project/{{ project.id }}/category/{{ category.id }}/task/{{ task.id }}">
             <article class="priority-{{ task.priority }}">
                 <h3>{{ task.name }}</h3>
+                {% if task.description %}<span class="material-symbols-outlined">description</span>{% endif %}
                 <div class="taskFooter">
                     <div role="group">
-                        {% if task.description %}<span class="material-symbols-outlined" title="Has Description">description</span>{% endif %}
+                        {% set date = task.deadline_timestamp | nice_due(task.completed_timestamp) %}
+                        {% set neverDue = task.deadline_timestamp == "" %}
+                        {% set dueSoon = task.deadline_timestamp | due_soon(task.completed_timestamp) %}
+                        <p class="due{% if dueSoon %} dueSoon{% elif neverDue %} dueNever{% endif %}">{{ date }}</p>
                         <div class="userIcons">
-                            {% set users = task.assigned_users | from_json %}
-                            {% if users %}
-                                {% for user in users[:3] %}
-                                    <a href="/user/{{ user.id }}/profile" data-tooltip="{{ user.username }}">
-                                        <img src="/user/{{ user.id }}/icon"
-                                             alt="{{ user.username }}"
-                                             class="user-icon"
-                                             height="64"
-                                             width="64"
-                                             aria-label="{{ user.username }}">
-                                    </a>
-                                {% endfor %}
-                                {% if users|length > 3 %}<span class="ellipsis">…</span>{% endif %}
-                            {% else %}
+                            {% set users = task.assigned_users | from_json | selectattr("id") | list %}
+
+                            {% if users|length == 0 %}
                                 <span class="no-users">No users assigned</span>
+                            {% elif users|length > 3 %}
+                                <span class="ellipsis">…</span>
                             {% endif %}
+
+                            {% for user in users[:3] %}
+                                <span class="user-icon-wrapper"
+                                      data-user-id="{{ user.id }}"
+                                      data-tooltip="{{ user.username }}">
+                                    <img src="/user/{{ user.id }}/icon"
+                                         alt="{{ user.username }}"
+                                         class="user-icon"
+                                         height="48"
+                                         width="48"
+                                         aria-label="{{ user.username }}">
+                                </span>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
@@ -74,6 +86,7 @@
         </a>
     {% endif %}
 {% endmacro %}
+
 {% block content %}
     {# New task form #}
     <button id="openModalBtn" class="floating-button">
@@ -83,7 +96,7 @@
         <div class="modal-content">
             <span id="closeModalBtn" class="close-button">×</span>
             <h2>Create New Task</h2>
-            <form action="/task" method="post">
+            <form action="/task" method="post" autocomplete="off">
                 <input type="hidden" name="project" value="{{ project.id }}">
                 <input type="hidden" name="category" value="{{ category.id }}">
                 <label for="group">Task Group</label>
@@ -93,18 +106,22 @@
                 <label for="taskName">
                     Task Name <span class="required">*</span>
                 </label>
-                <input type="text" id="taskName" name="name" autocomplete="off" required>
+                <input type="text"
+                       id="taskName"
+                       name="task_name"
+                       autocomplete="off"
+                       required>
                 <label for="description">Description</label>
                 <textarea id="description" name="description" rows="4" placeholder="..."></textarea>
                 <label for="priority">
                     Priority <span class="required">*</span>
                 </label>
                 <select name="priority" id="priority" aria-label="Priority">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option selected value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
+                    <option value="1">Lowest</option>
+                    <option value="2">Low</option>
+                    <option selected value="3">Default</option>
+                    <option value="4">High</option>
+                    <option value="5">Highest</option>
                 </select>
                 <label for="dueDate">Due Date</label>
                 <input type="date" id="dueDate" name="deadline">

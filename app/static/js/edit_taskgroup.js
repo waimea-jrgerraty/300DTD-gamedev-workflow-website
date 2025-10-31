@@ -51,4 +51,17 @@ document.addEventListener("DOMContentLoaded", () => {
             alert(err.message);
         }
     });
+
+    // Also putting the fake <a> tag in here
+    // This is needed so the task cards render properly (nesting <a> tags breaks everything)
+    document.querySelectorAll(".user-icon-wrapper").forEach(el => {
+        el.addEventListener("click", e => {
+            e.stopPropagation();     // Prevent outer <a> click
+            e.preventDefault();      // Prevent default browser action
+            
+            const userId = el.dataset.userId;
+            window.location.href = `/user/${userId}/profile`;
+        });
+    });
+
 });

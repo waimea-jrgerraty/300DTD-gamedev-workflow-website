@@ -5,9 +5,11 @@
   - Form for adding a new thing
 =====================================================#}
 {% extends "pages/base.jinja" %}
+
 {% block title %}
     TaskForge - {{ task.task_name }}
 {% endblock title %}
+
 {% block nav_left %}
     {% if project.owner == session.userid %}
         <li>
@@ -34,6 +36,7 @@
         <script src="{{ url_for('static', filename='js/project_add_user_modal.js') }}"></script>
     {% endif %}
 {% endblock nav_left %}
+
 {% block nav_centre %}
     <li>
         <h3>
@@ -46,9 +49,10 @@
         </h3>
     </li>
 {% endblock nav_centre %}
+
 {% block content %}
     <div id="fluid">
-        <article class="taskMain">
+        <article class="taskMain priority-{{ task.task_priority }}{% if task.task_completed_timestamp %} completed{% endif %}">
             <header>
                 <h3>{{ task.task_name }}</h3>
             </header>
@@ -77,6 +81,7 @@
                         {% endif %}
                         <!-- Trigger button -->
                         <button id="open-add-user"
+                                class="inline-btn"
                                 data-task-id="{{ task.task_id }}"
                                 data-project-id="{{ project.id }}">
                             <span class="material-symbols-outlined">person_add</span>
@@ -101,26 +106,41 @@
                                 </footer>
                             </article>
                         </dialog>
-                        <!-- Load your external JS -->
+                        <!-- Load external JS -->
                         <script src="{{ url_for('static', filename='js/add_user_modal.js') }}"></script>
                     </div>
-                    <form action="/project/{{ project.id }}/category/{{ category.id }}/task/{{ task.task_id }}/complete"
-                          method="post">
-                        <button type="submit" class="complete-btn">
-                            <span class="material-symbols-outlined">
+
+                    <div role="group" id="taskForm">
+                        <p class="due">{{ task.task_deadline_timestamp | nice_due(task.task_completed_timestamp) }}</p>
+
+                        <form action="/project/{{ project.id }}/category/{{ category.id }}/task/{{ task.task_id }}/complete"
+                              method="post">
+                            <button type="submit" class="complete-btn">
+                                <span class="material-symbols-outlined">
+                                    {% if task.task_completed_timestamp %}
+                                        check_box
+                                    {% else %}
+                                        check_box_outline_blank
+                                    {% endif %}
+                                </span>
                                 {% if task.task_completed_timestamp %}
-                                    check_box
+                                    Mark as Incomplete
                                 {% else %}
-                                    check_box_outline_blank
+                                    Mark as Complete
                                 {% endif %}
-                            </span>
-                            {% if task.task_completed_timestamp %}
-                                Mark as Incomplete
-                            {% else %}
-                                Mark as Complete
-                            {% endif %}
-                        </button>
-                    </form>
+                            </button>
+                        </form>
+
+                        <!-- Delete Task Button -->
+                        <form action="/project/{{ project.id }}/category/{{ category.id }}/task/{{ task.task_id }}/delete"
+                              method="post">
+                            <button type="submit"
+                                    class="inline-btn"
+                                    onclick="return confirm('Are you sure you want to delete this task?');">
+                                <span class="material-symbols-outlined">delete_forever</span>
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </footer>
         </article>
