@@ -10,7 +10,6 @@ from flask import (
     Response,
     Flask,
     render_template,
-    send_file,
     redirect,
     jsonify,
     flash,
@@ -31,7 +30,8 @@ from app.helpers.auth import login_required
 from app.helpers.time import init_datetime, utc_timestamp, utc_timestamp_now
 from io import BytesIO
 from PIL import Image
-from datetime import timedelta
+from humanize import naturaldelta, naturaltime
+from datetime import datetime, timedelta, timezone
 
 
 # Create the app
@@ -43,7 +43,7 @@ init_logging(app)  # Log requests
 init_error(app)  # Handle errors and exceptions
 init_datetime(app)  # Handle UTC dates in timestamps
 
-
+# Jinja filter to return a list from a json string
 @app.template_filter("from_json")
 def from_json(value):
     try:
@@ -52,6 +52,61 @@ def from_json(value):
         return []
 
 
+# Jinja filter to make a date human readable relative to the current time
+@app.template_filter("nice_due")
+def nice_due(deadline_str: str | None, completed_str: str | None) -> str:
+    label = "Due"
+    date_str = deadline_str
+    parse_format = "%Y-%m-%d"  # default for deadline
+
+    # Use completed timestamp if task is done
+    if completed_str:
+        label = "Done"
+        date_str = completed_str
+        parse_format = "%Y-%m-%d %H:%M:%S"
+
+    if not date_str:
+        return "Due: Never"
+
+    now = datetime.now()
+    try:
+        dt = datetime.strptime(date_str, parse_format)
+    except ValueError:
+        return f"{label}: Invalid date"
+
+    if completed_str:
+        now = datetime.now(timezone.utc)
+        dt = dt.replace(tzinfo=timezone.utc)
+    
+    delta = dt - now
+
+    if delta.total_seconds() > 0 and label == "Due":
+        # Future
+        days = delta.days
+        if days == 1:
+            return f"{label}: Tomorrow"
+        return f"{label}: {naturaldelta(delta)}"
+    else:
+        # Past or completed
+        return f"{label}: {naturaltime(dt)}"
+
+@app.template_filter("due_soon")
+def due_soon(deadline_str: str | None, completed_str: str | None) -> bool:
+    if completed_str or not deadline_str:
+        return False
+
+    try:
+        dt = datetime.strptime(deadline_str, "%Y-%m-%d")
+    except ValueError:
+        return False
+    
+    now = datetime.now()
+    delta = dt - now
+
+    if delta <= timedelta(days=7):
+        return True
+    
+    return False
 # -----------------------------------------------------------
 # Home page route
 # -----------------------------------------------------------
@@ -165,40 +220,62 @@ def category_root(project_id: int, category_id: int):
         categories = client.execute(sql, params)
         # Not all selected values will be used on the category page, can be optimized later
         sql = """
+            -- Select all groups in the given category, along with their tasks (as JSON arrays)
             SELECT 
-                g.id                AS group_id,
-                g.name              AS group_name,
-                g."order"           AS group_order,
-                COALESCE(
-                    json_group_array(
-                        json_object(
-                            'id', t.id,
-                            'name', t.name,
-                            'priority', t.priority,
-                            'description', t.description,
-                            'created_timestamp', t.created_timestamp,
-                            'completed_timestamp', t.completed_timestamp,
-                            'deadline_timestamp', t.deadline_timestamp,
-                            'assigned_users', COALESCE(
-                                (
-                                    SELECT json_group_array(
-                                        json_object('id', u.id, 'username', u.username)
-                                    )
-                                    FROM assigned_to a
-                                    LEFT JOIN users u ON u.id = a.user
-                                    WHERE a.task = t.id
-                                ), '[]'
-                            )
-                        )
-                    ), '[]'
-                ) AS tasks
+            g.id              AS group_id,
+            g.name            AS group_name,
+            g."order"         AS group_order,
+            -- Aggregate all tasks for this group as a JSON array
+            COALESCE(
+                json_group_array(
+                    json_object(
+                        'id', t.id,
+                        'name', t.name,
+                        'priority', t.priority,
+                        'description', t.description,
+                        'created_timestamp', t.created_timestamp,
+                        'completed_timestamp', t.completed_timestamp,
+                        'deadline_timestamp', t.deadline_timestamp,
+                        -- Include assigned users for each task as a JSON array
+                        'assigned_users', COALESCE(t.users, '[]')
+                    )
+                    -- Order tasks: by priority, then deadline (NULLs last), then name
+                    ORDER BY 
+                        t.priority DESC,                            
+                        CASE WHEN t.deadline_timestamp = '' THEN 1 ELSE 0 END,  
+                        t.deadline_timestamp ASC,                  
+                        t.name ASC
+                ), '[]'
+            ) AS tasks
             FROM task_groups g
-            LEFT JOIN tasks t
-                ON t."group" = g.id
-            INNER JOIN categories c
-                ON g.category = c.id
+            -- Join with a subquery that gets all tasks for all groups, including assigned users
+            LEFT JOIN (
+            SELECT 
+                t.id,
+                t.name,
+                t.priority,
+                t.description,
+                t.created_timestamp,
+                t.completed_timestamp,
+                t.deadline_timestamp,
+                t."group",
+                -- Aggregate assigned users for each task as a JSON array
+                COALESCE(
+                json_group_array(
+                    json_object('id', u.id, 'username', u.username)
+                ), '[]'
+                ) AS users
+            FROM tasks t
+            LEFT JOIN assigned_to a ON a.task = t.id
+            LEFT JOIN users u ON u.id = a.user
+            GROUP BY t.id
+            ) t ON t."group" = g.id
+            -- Only include groups that belong to the selected category
+            INNER JOIN categories c ON g.category = c.id
             WHERE c.id = ?
+            -- Group by group fields to aggregate tasks per group
             GROUP BY g.id, g.name, g."order"
+            -- Order groups by their 'order' field
             ORDER BY g."order";
         """
         params = [category_id]
@@ -348,6 +425,42 @@ def toggle_completed(project_id: int, category_id: int, task_id: int):
 
 
 # -----------------------------------------------------------
+# Route for deleting a task
+# - Restricted to logged in users
+# -----------------------------------------------------------
+@app.post(
+    "/project/<int:project_id>/category/<int:category_id>/task/<int:task_id>/delete"
+)
+@login_required
+def delete_task(project_id: int, category_id: int, task_id: int):
+    with connect_db() as client:
+        # Check if the user is a member of the project or the owner
+        sql = """
+            SELECT 1
+            FROM projects p
+            LEFT JOIN member_of m ON p.id = m.project AND m.user = ?
+            WHERE p.id = ? 
+                AND (p.owner = ? OR m.user IS NOT NULL)
+            LIMIT 1;
+        """
+        params = [session["userid"], project_id, session["userid"]]
+        result = client.execute(sql, params)
+        if not result.rows:
+            flash("You do not have access to that task", "error")
+            return redirect("/")
+
+        # Toggle the completed boolean in the database
+
+        sql = """
+            DELETE FROM tasks
+            WHERE id = ?;
+        """
+        client.execute(sql, [task_id])
+
+    return redirect(f"/project/{project_id}/category/{category_id}")
+
+
+# -----------------------------------------------------------
 # Route for adding a project, using data posted from a form
 # - Restricted to logged in users
 # -----------------------------------------------------------
@@ -476,7 +589,7 @@ def add_group(project_id, category_id):
 @login_required
 def create_task():
     # Get the data from the form
-    name = request.form.get("name")
+    name = request.form.get("task_name")
     description = request.form.get("description")
     priority = request.form.get("priority")
     deadline = request.form.get("deadline")
@@ -729,19 +842,12 @@ def assign_user_to_task(task_id: int):
 
     with connect_db() as client:
         # Get the project id for this task
-        # sql = """
-        #     SELECT p.id AS project_id
-        #     FROM tasks t
-        #     JOIN "group" g ON g.id = t."group"
-        #     JOIN category c ON c.id = g.category
-        #     JOIN project p ON p.id = c.project
-        #     WHERE t.id = ?;
-        # """
-        # Testing without categories and groups
         sql = """
             SELECT p.id AS project_id
             FROM tasks t
-            JOIN projects p ON p.id = t."group"
+            JOIN task_groups g ON g.id = t."group"
+            JOIN categories c ON c.id = g.category
+            JOIN projects p ON p.id = c.project
             WHERE t.id = ?;
         """
         params = [task_id]

@@ -19,3 +19,6 @@ tzdata
 
 # Python Imaging Library
 Pillow
+
+# For human readable dates and time diffs
+humanize
