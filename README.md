@@ -2,19 +2,17 @@
 
 by James Gerraty
 
-
 ---
 
 ## Project Description
 
-Replace this text with your project description and list the key features below
+TaskForge is a collaborative project manager and task tracker specifically tailored for game development.
 
-- Feature 1 here
-- Feature 2 here
-- Feature 3 here
-- Feature 4 here
-- Feature 5 here
-
+- User accounts
+- Multiple projects - one account can create or be a member of several projects
+- Invitations - a project owner can invite other users to their project for collaboration
+- Advanced categorisation - split your tasks into categories and custom groups within categories
+- Collaboration on tasks - assign multiple users in a project to a task
 
 ---
 
@@ -23,20 +21,19 @@ Replace this text with your project description and list the key features below
 - [GitHub repo for the project](https://github.com/waimea-jrgerraty/300DTD-gamedev-workflow-website)
 - [Live web app](https://three00dtd-gamedev-workflow-website.onrender.com/)
 
-
 ---
 
 ## Project Files
 
 - Program source code can be found in the [app](app/) folder
 - Project documentation is in the [docs](docs/) folder, including:
-   - [Project requirements](docs/0-requirements.md)
-   - Development sprints:
-      - [Sprint 1](docs/1-sprint-1-prototype.md) - Development of a prototype
-      - [Sprint 2](docs/2-sprint-2-mvp.md) - Development of a minimum viable product (MVP)
-      - [Sprint 3](docs/3-sprint-3-refinement.md) - Final refinements
-   - [Final review](docs/4-review.md)
-   - [Setup guide](docs/setup.md) - Project and hosting setup
+  - [Project requirements](docs/0-requirements.md)
+  - Development sprints:
+    - [Sprint 1](docs/1-sprint-1-prototype.md) - Development of a prototype
+    - [Sprint 2](docs/2-sprint-2-mvp.md) - Development of a minimum viable product (MVP)
+    - [Sprint 3](docs/3-sprint-3-refinement.md) - Final refinements
+  - [Final review](docs/4-review.md)
+  - [Setup guide](docs/setup.md) - Project and hosting setup
 
 ---
 
@@ -49,6 +46,7 @@ The project is a web app that uses [Flask](https://flask.palletsprojects.com) fo
 The app uses [Jinja2](https://jinja.palletsprojects.com/templates/) templating for structuring pages and data, and [PicoCSS](https://picocss.com/) as the starting point for styling the web front-end.
 
 The project demonstrates a number of **complex database techniques**:
+
 - Structuring the data using multiple tables
 - Creating queries which insert, update or delete to modify data
 - Creating customised data displays from multiple tables (e.g. web pages)
@@ -56,6 +54,7 @@ The project demonstrates a number of **complex database techniques**:
 - Applying data access permissions as appropriate to the outcome
 
 The project demonstrates a number of **complex digital media (web) techniques**:
+
 - Using non-core functionality
 - Using sophisticated digital effects
 - Applying industry standards or guidelines
@@ -64,6 +63,10 @@ The project demonstrates a number of **complex digital media (web) techniques**:
 - Using dynamic data handling and interactivity
 - Automation through scripts
 
-** EDIT THESE LISTS ABOVE TO MATCH YOUR PROJECT**
+## Test accounts
 
+*All test account passwords are simply `password`
 
+- Username: `John Smith` (Owner of project)
+- Username: `Alice Thompson` (Member of project)
+- Username: `David Chen` (Invited to project)
